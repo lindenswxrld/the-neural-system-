@@ -9,11 +9,13 @@ import { analyzePerformance } from "./actions";
 
 export default function NeuralSystemDashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [text, setText] = useState("");
   const [history, setHistory] = useState<any[]>([]);
   const [currentAudit, setCurrentAudit] = useState<any>(null);
 
   useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem('neural_history');
     if (saved) setHistory(JSON.parse(saved));
   }, []);
@@ -122,6 +124,7 @@ export default function NeuralSystemDashboard() {
                 
                 {/* The Radar Chart */}
                 <div className="h-[300px] w-full">
+                {mounted && (  
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentAudit.data}>
                       <PolarGrid stroke="#27272a" />
@@ -135,6 +138,8 @@ export default function NeuralSystemDashboard() {
                       />
                     </RadarChart>
                   </ResponsiveContainer>
+              )}   
+            }   
                 </div>
 
                 {/* Analysis & Summary */}
