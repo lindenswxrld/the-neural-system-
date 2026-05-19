@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Brain, Activity, Target, History, User, BarChart3 } from "lucide-react";
+import { Loader2, Brain, History, Target, BarChart3, Radar as RadarIcon, Share2 } from "lucide-react";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from 'recharts';
 import { analyzePerformance } from "./actions";
 
 export default function NeuralSystemDashboard() {
@@ -12,7 +13,6 @@ export default function NeuralSystemDashboard() {
   const [history, setHistory] = useState<any[]>([]);
   const [currentAudit, setCurrentAudit] = useState<any>(null);
 
-  // Load history from browser memory on startup
   useEffect(() => {
     const saved = localStorage.getItem('neural_history');
     if (saved) setHistory(JSON.parse(saved));
@@ -24,24 +24,26 @@ export default function NeuralSystemDashboard() {
 
     try {
       const result = await analyzePerformance(text);
+      const chartData = [
+        { subject: 'Openness', A: result.Openness, fullMark: 100 },
+        { subject: 'Conscientiousness', A: result.Conscientiousness, fullMark: 100 },
+        { subject: 'Extraversion', A: result.Extraversion, fullMark: 100 },
+        { subject: 'Agreeableness', A: result.Agreeableness, fullMark: 100 },
+        { subject: 'Neuroticism', A: result.Neuroticism, fullMark: 100 },
+      ];
+
       const newAudit = {
         id: Date.now(),
         date: new Date().toLocaleDateString(),
-        traits: [
-          { name: "Openness", score: result.Openness, color: "bg-violet-500" },
-          { name: "Conscientiousness", score: result.Conscientiousness, color: "bg-blue-500" },
-          { name: "Extraversion", score: result.Extraversion, color: "bg-emerald-500" },
-          { name: "Agreeableness", score: result.Agreeableness, color: "bg-amber-500" },
-          { name: "Neuroticism", score: result.Neuroticism, color: "bg-rose-500" },
-        ],
+        data: chartData,
         summary: result.summary,
       };
 
-      const updatedHistory = [newAudit, ...history].slice(0, 5); // Keep last 5
+      const updatedHistory = [newAudit, ...history].slice(0, 5);
       setHistory(updatedHistory);
       setCurrentAudit(newAudit);
       localStorage.setItem('neural_history', JSON.stringify(updatedHistory));
-
+      setText(""); // Clear input after success
     } catch (error) {
       alert("Neural Engine Bottleneck.");
     } finally {
@@ -50,110 +52,124 @@ export default function NeuralSystemDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 p-6 md:p-12 font-sans selection:bg-violet-500/30">
-      <div className="max-w-6xl mx-auto space-y-10">
+    <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-12 font-sans">
+      <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header */}
-        <header className="flex justify-between items-end border-b border-zinc-800 pb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Brain className="w-6 h-6 text-violet-500" />
-              <h1 className="text-3xl font-bold tracking-tighter italic uppercase">The Neural System</h1>
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-zinc-900 pb-8 gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20">
+                <Brain className="w-6 h-6 text-violet-500" />
+              </div>
+              <h1 className="text-3xl font-black tracking-tighter uppercase italic">The Neural System</h1>
             </div>
-            <p className="text-zinc-500 text-[10px] tracking-[0.3em] uppercase font-bold text-violet-400/60">Performance Analytics // v1.2</p>
+            <p className="text-zinc-600 text-[9px] tracking-[0.4em] uppercase font-bold">Advanced Performance Architect // v1.5</p>
           </div>
-          <div className="text-right space-y-1">
-             <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Active Audit Session</div>
-             <div className="text-xs font-mono text-emerald-500 flex items-center justify-end gap-2">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> 0x8821_SECURE
-             </div>
+          <div className="flex gap-3">
+            <Button variant="outline" className="border-zinc-800 bg-transparent text-zinc-500 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-900">
+               <Share2 className="w-3 h-3 mr-2" /> Export PDF
+            </Button>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Sidebar: History */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/50">
-              <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                <History className="w-3 h-3" /> Recent Audits
-              </h3>
-              <div className="space-y-3">
-                {history.length === 0 && <p className="text-[10px] text-zinc-700 italic">No historical data found...</p>}
-                {history.map((item) => (
-                  <button 
-                    key={item.id} 
-                    onClick={() => setCurrentAudit(item)}
-                    className="w-full text-left p-3 rounded-lg border border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900 transition-all group"
-                  >
-                    <div className="text-[10px] font-bold text-zinc-400 group-hover:text-white transition-colors">Audit #{item.id.toString().slice(-4)}</div>
-                    <div className="text-[9px] text-zinc-600">{item.date}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                <Target className="w-3 h-3" /> Input Module
+          {/* Left Column: Input & History (3 Cols) */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] flex items-center gap-2">
+                <Target className="w-3 h-3" /> Raw Behavioral Input
               </label>
               <textarea 
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                className="w-full h-48 bg-zinc-950 border border-zinc-900 rounded-xl p-4 text-xs text-zinc-400 focus:ring-1 focus:ring-violet-500 outline-none transition-all placeholder:text-zinc-800"
-                placeholder="Enter behavioral raw data..."
+                className="w-full h-40 bg-zinc-950 border border-zinc-900 rounded-xl p-4 text-xs text-zinc-400 focus:ring-1 focus:ring-violet-500 outline-none transition-all placeholder:text-zinc-800 leading-relaxed"
+                placeholder="Paste performance review, interview, or bio..."
               />
               <Button 
                 onClick={handleAnalyze} 
                 disabled={isAnalyzing}
-                className="w-full h-10 bg-white text-black hover:bg-zinc-200 font-black text-[10px] uppercase tracking-widest active:scale-95 transition-all"
+                className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-black text-xs uppercase tracking-tighter active:scale-95 transition-all"
               >
-                {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Run Performance Audit"}
+                {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Initiate Neural Audit"}
               </Button>
+            </div>
+
+            <div className="pt-6 border-t border-zinc-900">
+               <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <History className="w-3 h-3" /> Audit Registry
+              </h3>
+              <div className="space-y-2">
+                {history.map((item) => (
+                  <button 
+                    key={item.id} 
+                    onClick={() => setCurrentAudit(item)}
+                    className={`w-full text-left p-3 rounded-xl border transition-all group ${currentAudit?.id === item.id ? 'border-violet-500/50 bg-violet-500/5' : 'border-zinc-900 hover:border-zinc-700'}`}
+                  >
+                    <div className="text-[10px] font-bold text-zinc-400">SESSION_ID: {item.id.toString().slice(-6)}</div>
+                    <div className="text-[9px] text-zinc-600 uppercase tracking-widest">{item.date}</div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Main Dashboard */}
-          <div className="lg:col-span-3 space-y-8">
+          {/* Right Column: Visualization (8 Cols) */}
+          <div className="lg:col-span-8">
             {currentAudit ? (
-              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {currentAudit.traits.map((trait: any) => (
-                    <Card key={trait.name} className="bg-zinc-950 border-zinc-900 overflow-hidden">
-                      <CardContent className="p-5 space-y-4">
-                        <div className="flex justify-between items-end">
-                          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{trait.name}</span>
-                          <span className="text-xl font-mono font-bold text-white">{trait.score}%</span>
-                        </div>
-                        <div className="h-1 w-full bg-zinc-900 rounded-full">
-                          <div 
-                            className={`h-full ${trait.color} transition-all duration-[1500ms]`} 
-                            style={{ width: `${trait.score}%` }}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-zinc-950/30 p-8 rounded-3xl border border-zinc-900 animate-in fade-in zoom-in duration-500">
+                
+                {/* The Radar Chart */}
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentAudit.data}>
+                      <PolarGrid stroke="#27272a" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} />
+                      <Radar
+                        name="Candidate"
+                        dataKey="A"
+                        stroke="#8b5cf6"
+                        fill="#8b5cf6"
+                        fillOpacity={0.3}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
                 </div>
 
-                <Card className="bg-zinc-950 border-zinc-900 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-violet-500 to-transparent" />
-                  <CardContent className="p-8 space-y-4">
-                    <h3 className="text-violet-500 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
-                      <BarChart3 className="w-3 h-3" /> Executive Cognitive Summary
-                    </h3>
-                    <p className="text-sm text-zinc-400 leading-relaxed font-light italic">
+                {/* Analysis & Summary */}
+                <div className="space-y-6">
+                   <div className="flex items-center gap-2 text-violet-500">
+                      <RadarIcon className="w-4 h-4" />
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Psychometric Signature</h3>
+                   </div>
+                   <p className="text-sm text-zinc-400 leading-relaxed font-light italic border-l-2 border-violet-500/30 pl-4 py-2">
                       "{currentAudit.summary}"
-                    </p>
-                  </CardContent>
-                </Card>
+                   </p>
+                   <div className="grid grid-cols-2 gap-4 pt-4">
+                      {currentAudit.data.map((trait: any) => (
+                        <div key={trait.subject} className="space-y-1">
+                          <div className="flex justify-between text-[9px] uppercase font-bold text-zinc-600">
+                            <span>{trait.subject}</span>
+                            <span className="text-zinc-400">{trait.A}%</span>
+                          </div>
+                          <div className="h-[2px] w-full bg-zinc-900 rounded-full overflow-hidden">
+                            <div className="h-full bg-zinc-700" style={{ width: `${trait.A}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
               </div>
             ) : (
-              <div className="h-[400px] border border-dashed border-zinc-900 rounded-2xl flex flex-col items-center justify-center space-y-4">
-                <div className="p-4 bg-zinc-950 rounded-full border border-zinc-900">
-                  <User className="w-8 h-8 text-zinc-800" />
+              <div className="h-full min-h-[400px] border-2 border-dashed border-zinc-900 rounded-3xl flex flex-col items-center justify-center text-center p-12 space-y-6">
+                <div className="p-6 bg-zinc-950 rounded-full border border-zinc-900">
+                  <BarChart3 className="w-12 h-12 text-zinc-800 animate-pulse" />
                 </div>
-                <p className="text-xs text-zinc-700 uppercase tracking-widest">Initial System Standby. Awaiting Input.</p>
+                <div className="space-y-2">
+                  <h3 className="text-zinc-500 font-bold uppercase tracking-widest text-sm">System Ready for Deployment</h3>
+                  <p className="text-zinc-700 text-xs max-w-xs">Awaiting behavioral data input to generate unique performance signatures.</p>
+                </div>
               </div>
             )}
           </div>
