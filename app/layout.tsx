@@ -3,12 +3,22 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "The Neural System | Precision Human Intelligence",
-  description: "Stop betting on resumes. Quantify psychological certainty and eliminate workplace toxicity with AI-driven performance analytics.",
-  penGraph: {
+  description: "Quantify psychological certainty and eliminate workplace toxicity with AI-driven performance analytics.",
+  openGraph: {
     title: "The Neural System",
     description: "Institutional Grade Human Capital Intelligence.",
-    images: ["/og-image.png"], // You'll create this later
-  }
+    url: "https://theneuralsystem.vercel.app",
+    siteName: "The Neural System",
+    images: [
+      {
+        url: "https://theneuralsystem.vercel.app/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -18,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased font-sans">
+      <body className="antialiased bg-black">
         {children}
       </body>
     </html>
