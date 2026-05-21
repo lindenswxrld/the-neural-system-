@@ -20,42 +20,42 @@ export default function NeuralSystem() {
   const [compareList, setCompareList] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  // STABILIZER: Only load data after mounting
   useEffect(() => {
     setMounted(true);
     try {
       const saved = localStorage.getItem('neural_history');
-      if (saved) setHistory(JSON.parse(saved));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Safety: Ensure every item has a score and darkTriad array
+        const validated = parsed.map((item: any) => ({
+          ...item,
+          score: item.score || 0,
+          darkTriad: item.darkTriad || []
+        }));
+        setHistory(validated);
+      }
     } catch (e) {
-      console.error("Failed to load history", e);
+      console.error("Storage Reset Required", e);
     }
   }, []);
 
-  if (!mounted) return null; // Prevent hydration flash
-
-  const handleExport = () => {
-    if (!currentAudit && compareList.length < 2) return alert("Select an audit to export.");
-    window.print();
-  };
+  if (!mounted) return null;
 
   const handleAnalyze = async () => {
-    if (!text) return alert("Please enter behavioral data.");
+    if (!text) return alert("Enter behavioral data.");
     setIsAnalyzing(true);
     try {
       const result = await analyzePerformance(text);
       
-      const neuralScore = Math.floor(
-        ((result.Conscientiousness * 0.4) + 
-         (result.Openness * 0.3) + 
-         (result.Agreeableness * 0.1) + 
-         (result.Extraversion * 0.2)) - 
-         ((result.Narcissism + result.Machiavellianism + result.Psychopathy) / 3)
+      const nScore = Math.floor(
+        ((result.Conscientiousness * 0.4) + (result.Openness * 0.3) + (result.Agreeableness * 0.1) + (result.Extraversion * 0.2)) - 
+        (((result.Narcissism || 0) + (result.Machiavellianism || 0) + (result.Psychopathy || 0)) / 3)
       );
 
       const newAudit = {
         id: Date.now(),
         name: `Candidate #${Math.floor(1000 + Math.random() * 9000)}`,
-        score: neuralScore,
+        score: nScore,
         date: new Date().toLocaleDateString(),
         data: [
           { subject: 'Openness', A: result.Openness },
@@ -90,162 +90,122 @@ export default function NeuralSystem() {
       setCompareList(compareList.filter(a => a.id !== audit.id));
     } else if (compareList.length < 2) {
       setCompareList([...compareList, audit]);
-    } else {
-      alert("Comparison limited to 2 signatures.");
     }
   };
 
-  // --- VIEW 1: ELITE LANDING PAGE ---
   if (view === 'marketing') {
     return (
-      <div className="min-h-screen bg-black text-white font-sans selection:bg-violet-500/30">
-        <nav className="flex justify-between items-center p-6 max-w-7xl mx-auto border-b border-white/5">
+      <div className="min-h-screen bg-black text-white font-sans selection:bg-violet-500/30 flex flex-col">
+        <nav className="flex justify-between items-center p-6 max-w-7xl mx-auto w-full border-b border-white/5">
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-violet-500" />
             <span className="font-black italic tracking-tighter text-lg uppercase">The Neural System</span>
           </div>
-          <Button onClick={() => setView('dashboard')} variant="ghost" className="text-[10px] uppercase tracking-[0.3em] font-bold hover:text-violet-400">
+          <Button onClick={() => setView('dashboard')} variant="ghost" className="text-[10px] uppercase tracking-[0.3em] font-bold">
             Access Terminal <ChevronRight className="w-3 h-3 ml-1" />
           </Button>
         </nav>
-
-        <section className="py-24 px-6 text-center space-y-10 max-w-5xl mx-auto">
+        <section className="flex-1 flex flex-col items-center justify-center py-24 px-6 text-center space-y-10 max-w-5xl mx-auto">
           <div className="inline-block px-4 py-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 text-zinc-400 text-[9px] font-bold uppercase tracking-[0.3em]">
-            Institutional Grade Human Capital Intelligence
+            Institutional Human Intelligence
           </div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-tight italic max-w-3xl mx-auto uppercase">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter italic uppercase leading-tight">
             Precision <br /> 
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400">Human Intelligence.</span>
           </h1>
-          <p className="text-zinc-500 text-base md:text-lg max-w-2xl mx-auto font-light leading-relaxed">
-            Stop betting on resumes. Start quantifying <span className="text-zinc-200 uppercase font-bold tracking-tighter">Psychological Certainty</span>. 
-          </p>
-          <div className="pt-6">
-            <Button onClick={() => setView('dashboard')} className="h-12 px-8 bg-white text-black hover:bg-zinc-200 font-black uppercase tracking-tighter text-sm rounded-none active:scale-95 transition-all">
-              Initiate Performance Audit
-            </Button>
-          </div>
+          <Button onClick={() => setView('dashboard')} className="h-12 px-8 bg-white text-black font-black uppercase text-sm rounded-none active:scale-95 transition-all">
+            Initiate Performance Audit
+          </Button>
         </section>
       </div>
     );
   }
 
-  // --- VIEW 2: THE PERFORMANCE DASHBOARD ---
   return (
-    <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-12 font-sans print:p-0">
+    <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-12 font-sans">
       <div className="max-w-7xl mx-auto space-y-8">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-end border-b border-zinc-900 pb-8 gap-4 print:hidden">
           <div className="space-y-2">
-            <button onClick={() => setView('marketing')} className="flex items-center gap-3 group">
-              <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20 group-hover:bg-violet-500/20 transition-all">
-                <Brain className="w-6 h-6 text-violet-500" />
-              </div>
-              <h1 className="text-3xl font-black tracking-tighter uppercase italic text-left text-white">The Neural System</h1>
+            <button onClick={() => setView('marketing')} className="flex items-center gap-3">
+              <div className="p-2 bg-violet-500/10 rounded-lg border border-violet-500/20"><Brain className="w-6 h-6 text-violet-500" /></div>
+              <h1 className="text-3xl font-black tracking-tighter uppercase italic text-white">The Neural System</h1>
             </button>
-            <p className="text-zinc-600 text-[9px] tracking-[0.4em] uppercase font-bold text-violet-400/60 font-mono italic">
-              {compareList.length === 2 ? "Comparative Intelligence Mode Active" : "Performance Analytics // v1.9.1"}
-            </p>
+            <p className="text-zinc-600 text-[9px] tracking-[0.4em] uppercase font-bold italic">Analytics Engine // v1.9.2</p>
           </div>
-          <Button onClick={handleExport} variant="outline" className="border-zinc-800 bg-transparent text-zinc-500 text-[10px] uppercase font-bold tracking-widest hover:bg-zinc-900">
+          <Button onClick={() => window.print()} variant="outline" className="border-zinc-800 text-zinc-500 text-[10px] uppercase font-bold">
              <Printer className="w-3 h-3 mr-2" /> Export Session
           </Button>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* Sidebar */}
           <div className="lg:col-span-3 space-y-6 print:hidden">
             <div className="space-y-4">
-              <label className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] flex items-center gap-2">
-                <Target className="w-3 h-3" /> Raw Behavioral Input
-              </label>
               <textarea 
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className="w-full h-32 bg-zinc-950 border border-zinc-900 rounded-xl p-4 text-xs text-zinc-400 focus:ring-1 focus:ring-violet-500 outline-none transition-all placeholder:text-zinc-800"
+                value={text} onChange={(e) => setText(e.target.value)}
+                className="w-full h-32 bg-zinc-950 border border-zinc-900 rounded-xl p-4 text-xs text-zinc-400 outline-none"
                 placeholder="Paste performance data..."
               />
-              <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full h-10 bg-white text-black hover:bg-zinc-200 font-black text-xs uppercase tracking-tighter transition-all">
+              <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full bg-white text-black font-black text-xs uppercase tracking-tighter">
                 {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Initiate Audit"}
               </Button>
             </div>
             
             <div className="pt-6 border-t border-zinc-900">
-              <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                <History className="w-3 h-3" /> Audit Registry
-              </h3>
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                {history && history.length > 0 ? history.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2">
-                    <button 
-                      onClick={() => setCurrentAudit(item)} 
-                      className={`flex-1 text-left p-3 rounded-xl border transition-all ${currentAudit?.id === item.id ? 'border-violet-500/50 bg-violet-500/5' : 'border-zinc-900 hover:border-zinc-700'}`}
-                    >
-                      <div className="text-[10px] font-bold text-zinc-400 uppercase">{item.name}</div>
-                      <div className="text-[9px] text-zinc-600 italic">Score: {item.score}</div>
+              <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-4">Audit Registry</h3>
+              <div className="space-y-2">
+                {history?.map((item) => (
+                  <div key={item.id} className="flex gap-2">
+                    <button onClick={() => setCurrentAudit(item)} className={`flex-1 text-left p-3 rounded-xl border text-[10px] uppercase font-bold ${currentAudit?.id === item.id ? 'border-violet-500 bg-violet-500/5' : 'border-zinc-900'}`}>
+                      {item.name}
                     </button>
-                    <button 
-                      onClick={() => toggleCompare(item)}
-                      className={`p-3 rounded-xl border transition-all ${compareList.find(a => a.id === item.id) ? 'bg-violet-600 border-violet-500 text-white' : 'border-zinc-900 text-zinc-700 hover:text-zinc-400'}`}
-                    >
+                    <button onClick={() => toggleCompare(item)} className={`p-3 rounded-xl border ${compareList.find(a => a.id === item.id) ? 'bg-violet-600' : 'border-zinc-900 text-zinc-700'}`}>
                       <Users className="w-3 h-3" />
                     </button>
                   </div>
-                )) : <p className="text-[10px] text-zinc-800 italic">Registry empty.</p>}
+                ))}
               </div>
             </div>
           </div>
 
-          {/* Main Dashboard */}
-          <div className="lg:col-span-9 print:col-span-12 space-y-12">
+          <div className="lg:col-span-9 space-y-12">
             {compareList.length === 2 ? (
-              <div className="animate-in fade-in zoom-in duration-500 space-y-8">
-                <div className="bg-zinc-950/30 p-8 rounded-3xl border border-violet-900/20">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-violet-500 mb-8 text-center">Head-to-Head Overlap</h3>
-                  <div className="h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={compareList[0].data.map((d: any, i: number) => ({
-                        subject: d.subject,
-                        A: d.A,
-                        B: compareList[1]?.data[i]?.A || 0
-                      }))}>
-                        <PolarGrid stroke="#27272a" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} />
-                        <Radar name={compareList[0].name} dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
-                        <Radar name={compareList[1].name} dataKey="B" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.3} />
-                        <Legend />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
+              <div className="bg-zinc-950/30 p-8 rounded-3xl border border-violet-900/20 h-[500px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={compareList[0]?.data?.map((d: any, i: number) => ({
+                    subject: d.subject,
+                    A: d.A,
+                    B: compareList[1]?.data[i]?.A || 0
+                  }))}>
+                    <PolarGrid stroke="#27272a" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} />
+                    <Radar name={compareList[0].name} dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
+                    <Radar name={compareList[1].name} dataKey="B" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.3} />
+                    <Legend />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
             ) : currentAudit ? (
-              <div className="animate-in fade-in zoom-in duration-500 space-y-12">
+              <div className="space-y-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-zinc-950/30 p-8 rounded-3xl border border-zinc-900">
                   <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentAudit.data}>
                         <PolarGrid stroke="#27272a" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} />
                         <Radar name="Candidate" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
                       </RadarChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="space-y-6">
-                     <div className="flex items-center gap-2 text-violet-500">
-                        <RadarIcon className="w-4 h-4" />
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">{currentAudit.name} Signature</h3>
-                     </div>
-                     <p className="text-sm text-zinc-400 leading-relaxed font-light italic border-l-2 border-violet-500/30 pl-4">"{currentAudit.summary}"</p>
+                  <div className="space-y-4">
+                     <h3 className="text-[10px] font-black uppercase text-violet-500 italic tracking-widest">{currentAudit.name} Signature</h3>
+                     <p className="text-sm text-zinc-400 italic leading-relaxed">"{currentAudit.summary}"</p>
                   </div>
                 </div>
-                
-                <div className="bg-zinc-950/30 p-8 rounded-3xl border border-rose-900/20">
-                  <div className="flex items-center gap-2 text-rose-500 mb-6">
-                     <AlertTriangle className="w-4 h-4" />
-                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Toxicity Audit // Dark Triad Risk</h3>
-                  </div>
+
+                <div className="bg-zinc-950/30 p-8 rounded-3xl border border-rose-900/20 space-y-6">
+                  <h3 className="text-[10px] font-black uppercase text-rose-500 tracking-widest flex items-center gap-2"><AlertTriangle className="w-3 h-3"/> Toxicity Audit</h3>
                   <div className="grid grid-cols-3 gap-6">
-                    {currentAudit.darkTriad.map((trait: any) => (
+                    {currentAudit.darkTriad?.map((trait: any) => (
                       <div key={trait.name} className="space-y-2">
                         <div className="flex justify-between text-[9px] uppercase font-bold text-zinc-500">
                           <span>{trait.name}</span>
@@ -260,39 +220,35 @@ export default function NeuralSystem() {
                 </div>
               </div>
             ) : (
-              <div className="h-full min-h-[400px] border-2 border-dashed border-zinc-900 rounded-3xl flex flex-col items-center justify-center text-center p-12 space-y-6">
+              <div className="h-full min-h-[400px] border-2 border-dashed border-zinc-900 rounded-3xl flex flex-col items-center justify-center text-center p-12">
                 <Fingerprint className="w-12 h-12 text-zinc-800" />
-                <h3 className="text-zinc-500 font-bold uppercase tracking-widest text-xs">System Standby</h3>
+                <h3 className="text-zinc-500 font-bold uppercase tracking-widest text-xs mt-4">System Standby</h3>
               </div>
             )}
 
-            {/* LEADERBOARD TABLE */}
-            {history && history.length > 0 && (
-              <div className="space-y-6 print:hidden">
-                <div className="flex items-center gap-2 text-zinc-500">
-                  <TrendingUp className="w-4 h-4" />
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Institutional Talent Ranking</h3>
-                </div>
-                <div className="bg-zinc-950/50 border border-zinc-900 rounded-2xl overflow-hidden">
+            {history.length > 0 && (
+              <div className="space-y-6">
+                <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest flex items-center gap-2"><TrendingUp className="w-3 h-3"/> Institutional Ranking</h3>
+                <div className="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden">
                   <table className="w-full text-left text-[10px]">
-                    <thead>
-                      <tr className="border-b border-zinc-900 bg-zinc-900/20 text-zinc-500 font-black uppercase tracking-widest">
-                        <th className="p-4">Candidate ID</th>
-                        <th className="p-4 text-center">Neural Score</th>
-                        <th className="p-4">Risk Level</th>
+                    <thead className="bg-zinc-900/50 text-zinc-500 uppercase">
+                      <tr>
+                        <th className="p-4">Candidate</th>
+                        <th className="p-4 text-center">Score</th>
+                        <th className="p-4">Risk</th>
                         <th className="p-4 text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {[...history].sort((a,b) => b.score - a.score).map((item) => (
-                        <tr key={item.id} className="border-b border-zinc-900/50 hover:bg-zinc-900/20 transition-all text-white">
+                    <tbody className="text-white">
+                      {[...history].sort((a,b) => (b.score || 0) - (a.score || 0)).map((item) => (
+                        <tr key={item.id} className="border-b border-zinc-900/50 hover:bg-zinc-900/20">
                           <td className="p-4 font-black italic">{item.name}</td>
-                          <td className="p-4 text-center font-mono">{item.score}</td>
+                          <td className="p-4 text-center font-mono">{item.score || 0}</td>
                           <td className="p-4">
-                            {item.darkTriad.some((t: any) => t.score > 60) ? <span className="text-rose-500 font-black">High Risk</span> : <span className="text-zinc-600">Stable</span>}
+                            {(item.darkTriad || []).some((t: any) => t.score > 60) ? <span className="text-rose-500 font-bold">High Risk</span> : <span className="text-zinc-600">Stable</span>}
                           </td>
                           <td className="p-4 text-right">
-                            <button onClick={() => setCurrentAudit(item)} className="text-violet-500 hover:text-white uppercase font-bold tracking-tighter">Review</button>
+                            <button onClick={() => setCurrentAudit(item)} className="text-violet-500 hover:text-white uppercase font-bold">Review</button>
                           </td>
                         </tr>
                       ))}
