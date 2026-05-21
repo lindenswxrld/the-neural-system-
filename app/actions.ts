@@ -1,8 +1,7 @@
 'use server'
 
 import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
-import { z } from 'zod';
+import { generateText } from 'ai';
 
 const groq = createOpenAI({
   baseURL: 'https://api.groq.com/openai/v1',
@@ -11,34 +10,23 @@ const groq = createOpenAI({
 
 export async function analyzePerformance(userInput: string) {
   try {
-    const { object } = await generateObject({
+    const { text } = await generateText({
       model: groq('llama-3.3-70b-versatile'),
-      schema: z.object({
-        // Performance Traits
-        Openness: z.number().min(0).max(100),
-        Conscientiousness: z.number().min(0).max(100),
-        Extraversion: z.number().min(0).max(100),
-        Agreeableness: z.number().min(0).max(100),
-        Neuroticism: z.number().min(0).max(100),
-        
-        // Dark Triad / Risk Traits
-        Narcissism: z.number().min(0).max(100),
-        Machiavellianism: z.number().min(0).max(100),
-        Psychopathy: z.number().min(0).max(100),
-        
-        summary: z.string(),
-        risk_warning: z.string(), // New field for toxicity insights
-      }),
-      system: `You are an elite Industrial Psychologist specializing in the Dark Triad (Short Dark Triad SD3 model).
-      Analyze the text for both positive performance markers and toxic derailers.
-      Quantify Narcissism, Machiavellianism, and Psychopathy based on linguistic markers of entitlement, manipulation, and callousness.
-      Provide a 'risk_warning' that evaluates potential for workplace toxicity.`,
+      system: `You are an elite Industrial Psychologist. 
+      Analyze the text and quantify the following traits (0-100): 
+      Openness, Conscientiousness, Extraversion, Agreeableness, Neuroticism, Narcissism, Machiavellianism, Psychopathy.
+      
+      Return ONLY a raw JSON object. No backticks, no markdown.
+      Format: {"Openness": 80, "Conscientiousness": 90, "Extraversion": 50, "Agreeableness": 60, "Neuroticism": 20, "Narcissism": 10, "Machiavellianism": 5, "Psychopathy": 0, "summary": "Two sentences here", "risk_warning": "One sentence here"}`,
       prompt: userInput,
     });
 
-    return object;
+    // This "Cleans" the AI's response if it accidentally adds ```json
+    const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(cleanJson);
+    
   } catch (error) {
-    console.error("AI Analysis failed:", error);
+    console.error("DETAILED_ENGINE_ERROR:", error);
     throw new Error("Neural Engine failed to parse data.");
   }
 }
