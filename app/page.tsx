@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+// 1. UI COMPONENTS
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+// 2. ICONS
 import { 
   Brain, History, Target, BarChart3, 
   Printer, ChevronRight, Zap, Shield, Globe, 
@@ -10,18 +13,20 @@ import {
   UserPlus, Lock, LayoutDashboard, TrendingDown, 
   UploadCloud, ShieldAlert, Loader2 
 } from "lucide-react";
+
+// 3. TOOLS & DATA
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, 
   ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, Tooltip 
 } from 'recharts';
-import Papa from 'papaparse';
+import * as Papa from 'papaparse';
 import { analyzePerformance, compareCandidates } from "./actions";
 import { supabase } from './lib/supabase';
 
-// --- HELPER COMPONENTS ---
+// --- SHARED HELPER COMPONENTS ---
 
 const StatsCard = ({ label, value, trend, color }: { label: string, value: string, trend: string, color: string }) => (
-  <Card className="bg-zinc-950 border-zinc-900 p-6 rounded-2xl">
+  <Card className="bg-zinc-950 border-zinc-900 p-6 rounded-2xl shadow-inner">
     <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-2">{label}</p>
     <div className="flex justify-between items-end">
       <h4 className={`text-3xl font-black italic ${color}`}>{value}</h4>
@@ -32,11 +37,11 @@ const StatsCard = ({ label, value, trend, color }: { label: string, value: strin
 
 const PulseBar = ({ label, value, color }: { label: string, value: number, color: string }) => (
   <div className="space-y-2 text-left">
-    <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-500">
+    <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-500 tracking-tighter">
       <span>{label}</span>
       <span className="text-white font-mono">{value}%</span>
     </div>
-    <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+    <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
       <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${value}%` }} />
     </div>
   </div>
@@ -45,6 +50,7 @@ const PulseBar = ({ label, value, color }: { label: string, value: number, color
 type Module = 'intelligence' | 'retention' | 'engagement' | 'risk';
 
 export default function NeuralPlatform() {
+  // --- STATE MANAGEMENT ---
   const [view, setView] = useState<'marketing' | 'dashboard'>('marketing');
   const [activeModule, setActiveModule] = useState<Module>('intelligence');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -57,6 +63,9 @@ export default function NeuralPlatform() {
   const [compareList, setCompareList] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
 
+  // Retention Live Stats
+  const [retentionStats, setRetentionStats] = useState({ rate: "14.2%", loss: "08" });
+
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('neural_history');
@@ -67,12 +76,13 @@ export default function NeuralPlatform() {
 
   if (!mounted) return null;
 
+  // --- LOGIC FUNCTIONS ---
+
   const handleAnalyze = async () => {
-    if (!text || !candidateName) return alert("Incomplete Data.");
+    if (!text || !candidateName) return alert("Incomplete identity data.");
     setIsAnalyzing(true);
     try {
       const result = await analyzePerformance(text);
-      
       const nScore = Math.floor(
         ((result.Conscientiousness * 0.4) + (result.Openness * 0.3) + (result.Agreeableness * 0.1) + (result.Extraversion * 0.2)) - 
         (((result.Narcissism || 0) + (result.Machiavellianism || 0) + (result.Psychopathy || 0)) / 3)
@@ -99,27 +109,14 @@ export default function NeuralPlatform() {
         riskWarning: result.risk_warning,
       };
 
-      // OPTIONAL: Try saving to Supabase if configured
-      if (supabase) {
-        await supabase.from('employees').insert([{
-          name: newAudit.name,
-          score: newAudit.score,
-          traits: result
-        }]);
-      }
-
       const updatedHistory = [newAudit, ...history].slice(0, 10);
       setHistory(updatedHistory);
       setCurrentAudit(newAudit);
       localStorage.setItem('neural_history', JSON.stringify(updatedHistory));
       setText("");
       setCandidateName("");
-    } catch (error) { 
-      console.error(error);
-      alert("Engine Latency. Check Console."); 
-    } finally { 
-      setIsAnalyzing(false); 
-    }
+    } catch (error) { alert("Neural Engine Latency."); }
+    finally { setIsAnalyzing(false); }
   };
 
   const toggleCompare = async (audit: any) => {
@@ -141,39 +138,48 @@ export default function NeuralPlatform() {
   const NavItem = ({ icon, label, id }: { icon: any, label: string, id: Module }) => (
     <button 
       onClick={() => setActiveModule(id)}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeModule === id ? 'bg-violet-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900'}`}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all ${activeModule === id ? 'bg-violet-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900'}`}
     >
-      {React.cloneElement(icon, { size: 16 })}
+      {React.cloneElement(icon, { size: 14 })}
       {label}
     </button>
   );
 
-  // --- VIEW 1: MARKETING ---
+  // --- VIEW 1: MARKETING LANDING ---
   if (view === 'marketing') {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center space-y-12">
+      <div className="min-h-screen bg-black text-white font-sans flex flex-col items-center justify-center p-6 text-center space-y-12">
         <div className="flex items-center gap-3 mb-4 animate-neural">
           <Brain className="w-10 h-10 text-violet-500" />
           <span className="font-black italic text-2xl uppercase tracking-tighter">The Neural System</span>
         </div>
-        <h1 className="text-5xl md:text-8xl font-black tracking-tighter italic uppercase leading-tight">
-          Precision <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-500">Human Intelligence.</span>
-        </h1>
-        <Button onClick={() => setView('dashboard')} className="h-16 px-12 bg-white text-black font-black uppercase text-xl rounded-none active:scale-95 transition-all">
-          Access Terminal <ChevronRight className="ml-2" />
-        </Button>
+        <div className="max-w-5xl space-y-10">
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter italic leading-none uppercase">
+            Precision <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400">Human Intelligence.</span>
+          </h1>
+          <p className="text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
+            Eliminate the risk of high-cost bad hires. Quantify psychological certainty and detect workplace toxicity with 98% predictive accuracy.
+          </p>
+          <Button onClick={() => setView('dashboard')} className="h-16 px-12 bg-white text-black font-black uppercase text-xl rounded-none active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+            Access Terminal <ChevronRight className="ml-2 w-6 h-6" />
+          </Button>
+        </div>
+        <footer className="fixed bottom-10 text-zinc-800 text-[10px] font-bold uppercase tracking-[0.5em]">
+          Linden Performance Architectures &copy; 2026
+        </footer>
       </div>
     );
   }
 
-  // --- VIEW 2: DASHBOARD ---
+  // --- VIEW 2: INSTITUTIONAL DASHBOARD ---
   return (
     <div className="min-h-screen bg-black text-white flex font-sans">
+      
       {/* SIDEBAR NAVIGATION */}
       <div className="w-64 border-r border-zinc-900 flex flex-col p-6 space-y-8 print:hidden">
-        <button onClick={() => setView('marketing')} className="flex items-center gap-3">
+        <button onClick={() => setView('marketing')} className="flex items-center gap-3 group">
           <Brain className="w-6 h-6 text-violet-500 animate-neural" />
-          <span className="font-black italic text-sm uppercase tracking-tighter text-left leading-none">Neural<br/>System</span>
+          <span className="font-black italic text-sm uppercase tracking-tighter text-left leading-none group-hover:text-violet-400 transition-colors">Neural<br/>System</span>
         </button>
         
         <nav className="flex-1 space-y-2">
@@ -185,48 +191,52 @@ export default function NeuralPlatform() {
 
         <div className="pt-6 border-t border-zinc-900">
           <div className="flex items-center gap-3 p-2 text-zinc-500">
-            <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-[10px] font-bold text-white">HR</div>
+            <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg">HR</div>
             <div className="text-[10px] font-bold uppercase tracking-widest">Admin Mode</div>
           </div>
         </div>
       </div>
 
-      <main className="flex-1 p-12 overflow-y-auto">
+      {/* MAIN CONTENT TERMINAL */}
+      <main className="flex-1 p-12 overflow-y-auto custom-scrollbar">
         
-        {/* MODULE: INTELLIGENCE */}
+        {/* MODULE: INTELLIGENCE TERMINAL */}
         {activeModule === 'intelligence' && (
-          <div className="space-y-12 text-left">
-            <header className="flex justify-between items-end border-b border-zinc-900 pb-8">
-              <h2 className="text-3xl font-black italic uppercase tracking-tighter">Intelligence Terminal</h2>
-              <div className="flex items-center gap-4">
-                 <div className="text-[8px] font-black text-rose-500 uppercase border border-rose-500/20 px-3 py-1 rounded bg-rose-500/5">
-                    <Lock className="inline w-2 h-2 mr-1" /> Classified: Tier 1
+          <div className="animate-in fade-in duration-700 space-y-12 text-left">
+            <header className="flex justify-between items-end border-b border-zinc-900 pb-8 print:border-zinc-200">
+              <div>
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter">Intelligence Terminal</h2>
+                <p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.4em] mt-1">v2.3 // Behavioral Signature Mapping</p>
+              </div>
+              <div className="flex flex-col items-end gap-3">
+                 <div className="flex items-center gap-2 text-[8px] font-black text-rose-500 uppercase tracking-[0.2em] border border-rose-500/20 px-3 py-1 rounded bg-rose-500/5">
+                    <Lock className="w-3 h-3" /> Classified: Tier 1
                  </div>
-                 <Button onClick={() => window.print()} variant="outline" className="border-zinc-800 text-zinc-500 text-[10px] uppercase h-8">Export PDF</Button>
+                 <Button onClick={() => window.print()} variant="outline" className="border-zinc-800 text-zinc-500 text-[10px] font-bold h-8 hover:bg-zinc-900">Export Session</Button>
               </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              <div className="lg:col-span-4 space-y-6">
-                <div className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+              <div className="lg:col-span-4 space-y-8">
+                <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2"><UserPlus className="w-3 h-3"/> Candidate Name</label>
-                    <input type="text" value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-3 text-xs text-white outline-none focus:border-violet-500 transition-all" placeholder="Enter Name..." />
+                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><UserPlus className="w-3 h-3"/> Candidate Name</label>
+                    <input type="text" value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-xs text-white outline-none focus:border-violet-500" placeholder="E.g. MICHAEL JORDAN" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2"><Target className="w-3 h-3"/> Behavioral Data</label>
-                    <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-40 bg-zinc-950 border border-zinc-900 rounded-xl p-4 text-xs text-zinc-400 outline-none focus:border-violet-500 transition-all" placeholder="Paste assessment data..." />
+                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><Target className="w-3 h-3"/> Behavioral Data</label>
+                    <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-40 bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-xs text-zinc-400 outline-none focus:border-violet-500" placeholder="Paste assessment raw text..." />
                   </div>
-                  <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full bg-white text-black font-black text-xs uppercase h-12">
-                    {isAnalyzing ? <Loader2 className="animate-spin w-4 h-4" /> : "Initiate Audit"}
+                  <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full bg-white text-black font-black text-xs uppercase h-12 shadow-xl hover:bg-zinc-200">
+                    {isAnalyzing ? <Loader2 className="animate-spin w-4 h-4" /> : "Initiate Neural Audit"}
                   </Button>
                 </div>
                 <div className="pt-8 border-t border-zinc-900">
-                  <h3 className="text-[10px] font-black text-zinc-500 uppercase mb-4 flex items-center gap-2"><History className="w-3 h-3"/> Registry</h3>
-                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                  <h3 className="text-[10px] font-black text-zinc-500 uppercase mb-4 flex items-center gap-2 tracking-widest"><History className="w-3 h-3"/> Registry</h3>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                     {history?.map((item) => (
                       <div key={item.id} className="flex gap-2">
-                        <button onClick={() => {setCurrentAudit(item); setCompareList([]);}} className={`flex-1 text-left p-3 rounded-xl border text-[10px] font-bold uppercase transition-all ${currentAudit?.id === item.id ? 'border-violet-500 bg-violet-500/5 text-white' : 'border-zinc-900 text-zinc-600'}`}>
+                        <button onClick={() => {setCurrentAudit(item); setCompareList([]);}} className={`flex-1 text-left p-3 rounded-xl border text-[10px] font-bold uppercase transition-all ${currentAudit?.id === item.id ? 'border-violet-500 bg-violet-500/5 text-white' : 'border-zinc-900 text-zinc-600 hover:border-zinc-700'}`}>
                           {item.name}
                         </button>
                         <button onClick={() => toggleCompare(item)} className={`p-3 rounded-xl border transition-all ${compareList.find(a => a.id === item.id) ? 'bg-violet-600 text-white' : 'border-zinc-900 text-zinc-700'}`}><Users className="w-3 h-3" /></button>
@@ -239,42 +249,63 @@ export default function NeuralPlatform() {
               <div className="lg:col-span-8">
                 {compareList.length === 2 ? (
                   <div className="space-y-8 animate-in zoom-in duration-500">
-                    <div className="bg-zinc-950/30 p-10 rounded-[2rem] border border-violet-900/20 h-[450px]">
+                    <div className="bg-zinc-950/40 p-10 rounded-[2.5rem] border border-violet-900/20 h-[500px]">
+                      <h3 className="text-[10px] font-black uppercase text-violet-500 tracking-[0.5em] mb-12 text-center">Head-to-Head Differential</h3>
                       <ResponsiveContainer width="100%" height="100%">
                         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={compareList[0]?.data?.map((d: any, i: number) => ({
                           subject: d.subject, A: d.A, B: compareList[1]?.data[i]?.A || 0
                         }))}>
                           <PolarGrid stroke="#27272a" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} />
+                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} />
                           <Radar name={compareList[0].name} dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
                           <Radar name={compareList[1].name} dataKey="B" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.3} />
                           <Legend />
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
+                    <Card className="bg-violet-950/5 border-violet-500/10 p-8 rounded-2xl">
+                       <h3 className="text-violet-500 text-[10px] font-black uppercase mb-4 flex items-center gap-2 tracking-widest"><Brain className="w-4 h-4"/> Differential Analysis</h3>
+                       {isComparing ? <div className="flex items-center gap-3 text-zinc-600 text-xs italic"><Loader2 className="animate-spin w-4 h-4" /> Synthesizing data...</div> : <p className="text-sm text-zinc-300 italic leading-loose font-light">&quot;{compSummary}&quot;</p>}
+                    </Card>
                   </div>
                 ) : currentAudit ? (
-                  <div className="space-y-12 animate-in fade-in duration-700">
+                  <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-zinc-950/20 p-10 rounded-[2rem] border border-zinc-900">
-                      <div className="h-[300px] w-full">
+                      <div className="h-[350px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentAudit.data}>
                             <PolarGrid stroke="#27272a" />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} />
                             <Radar name="Candidate" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
                           </RadarChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className="space-y-4">
-                         <h3 className="text-[11px] font-black uppercase text-violet-500 italic">{currentAudit.name} Signature</h3>
-                         <p className="text-sm text-zinc-400 italic leading-relaxed">"{currentAudit.summary}"</p>
+                      <div className="space-y-6">
+                         <h3 className="text-[11px] font-black uppercase text-violet-500 italic tracking-[0.3em]">{currentAudit.name} Signature</h3>
+                         <p className="text-sm text-zinc-300 italic leading-relaxed font-light">Inner cognitive profile generated based on Big Five framework.</p>
+                         <p className="text-base text-zinc-200 italic font-light">&quot;{currentAudit.summary}&quot;</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-rose-950/5 p-10 rounded-[2.5rem] border border-rose-900/10 space-y-8">
+                      <h3 className="text-[10px] font-black uppercase text-rose-500 flex items-center gap-3 tracking-[0.4em]"><AlertTriangle className="w-4 h-4"/> Toxicity Diagnostic</h3>
+                      <div className="grid grid-cols-3 gap-8">
+                        {currentAudit.darkTriad?.map((trait: any) => (
+                          <div key={trait.name} className="space-y-3">
+                            <div className="flex justify-between text-[10px] uppercase font-black text-zinc-600 tracking-tighter"><span>{trait.name}</span><span className="text-white font-mono">{trait.score}%</span></div>
+                            <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden"><div className="h-full bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.4)]" style={{ width: `${trait.score}%` }} /></div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-4 border-l-2 border-rose-500 bg-rose-500/5">
+                        <p className="text-[11px] text-rose-300 italic font-light">Note: {currentAudit.riskWarning || "No critical derailers identified."}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="h-[500px] border-2 border-dashed border-zinc-900 rounded-[3rem] flex flex-col items-center justify-center text-center p-12">
+                  <div className="h-[600px] border-2 border-dashed border-zinc-900 rounded-[3rem] flex flex-col items-center justify-center text-center p-12">
                     <Fingerprint className="w-16 h-16 text-zinc-800 mb-6" />
-                    <h3 className="text-zinc-600 font-bold uppercase text-[10px] tracking-[0.5em]">System Standby</h3>
+                    <h3 className="text-zinc-600 font-bold uppercase text-[10px] tracking-[0.5em]">Institutional Standby // Terminal Active</h3>
                   </div>
                 )}
               </div>
@@ -282,13 +313,13 @@ export default function NeuralPlatform() {
           </div>
         )}
 
-        {/* MODULE: RETENTION */}
+        {/* MODULE: RETENTION SHIELD */}
         {activeModule === 'retention' && (
-          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-10 text-left">
-            <header className="flex justify-between items-end">
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-12 text-left">
+            <header className="flex justify-between items-end border-b border-zinc-900 pb-8">
               <div>
                 <h2 className="text-3xl font-black italic uppercase tracking-tighter">Retention Shield</h2>
-                <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-[0.3em] mt-2">Enterprise Attrition Monitor</p>
+                <p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.4em] mt-1 text-left">Critical Skill Loss Prevention</p>
               </div>
               <div className="relative group">
                 <input 
@@ -299,53 +330,68 @@ export default function NeuralPlatform() {
                     if (file) {
                       Papa.parse(file, {
                         header: true,
-                        complete: (res) => alert(`Ingested ${res.data.length} records.`)
+                        complete: (res) => {
+                          const leavers = res.data.filter((row: any) => row.Exit_Date && row.Exit_Date.trim() !== "").length;
+                          const total = res.data.length;
+                          const rate = ((leavers / total) * 100).toFixed(1);
+                          setRetentionStats({ rate: `${rate}%`, loss: leavers.toString().padStart(2, '0') });
+                          alert(`Processed ${total} records. System calibrated.`);
+                        }
                       });
                     }
                   }}
                 />
-                <Button className="bg-white text-black text-[10px] font-black uppercase h-12 px-8">
-                  <UploadCloud className="w-4 h-4 mr-2" /> Ingest CSV
+                <Button className="bg-white text-black text-[10px] font-black uppercase h-12 px-8 shadow-xl hover:bg-violet-600 hover:text-white transition-all">
+                  <UploadCloud className="w-4 h-4 mr-2" /> Ingest CSV Data
                 </Button>
               </div>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatsCard label="Turnover Rate" value="14.2%" trend="-2.1%" color="text-emerald-400" />
-              <StatsCard label="Critical Loss" value="08" trend="+3" color="text-rose-500" />
-              <StatsCard label="Avg. Tenure" value="3.4 yrs" trend="Stable" color="text-violet-400" />
+              <StatsCard label="Turnover Rate" value={retentionStats.rate} trend="Live" color="text-emerald-400" />
+              <StatsCard label="Critical Skill Loss" value={retentionStats.loss} trend="Live" color="text-rose-500" />
+              <StatsCard label="Retention ROI" value="R1.2M" trend="Est." color="text-violet-400" />
             </div>
 
-            <Card className="bg-zinc-950 border-zinc-900 p-10 rounded-[2.5rem]">
-               <h3 className="text-[10px] font-black uppercase text-zinc-500 mb-8 tracking-widest">Departmental Heatmap</h3>
-               <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={[{ dept: 'Sales', val: 22 }, { dept: 'Eng', val: 12 }, { dept: 'Ops', val: 18 }]}>
-                      <XAxis dataKey="dept" stroke="#3f3f46" fontSize={10} />
-                      <YAxis stroke="#3f3f46" fontSize={10} />
-                      <Bar dataKey="val" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-               </div>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+               <Card className="bg-zinc-950 border-zinc-900 p-10 rounded-[2.5rem] shadow-2xl">
+                  <h3 className="text-[10px] font-black uppercase text-zinc-500 mb-8 tracking-[0.2em]">Institutional Attrition Heatmap</h3>
+                  <div className="h-[300px]">
+                     <ResponsiveContainer width="100%" height="100%">
+                       <BarChart data={[{ dept: 'Sales', val: 22 }, { dept: 'Eng', val: 12 }, { dept: 'Ops', val: 18 }, { dept: 'HR', val: 5 }]}>
+                         <XAxis dataKey="dept" stroke="#3f3f46" fontSize={10} fontStyle="italic" />
+                         <YAxis stroke="#3f3f46" fontSize={10} />
+                         <Bar dataKey="val" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                       </BarChart>
+                     </ResponsiveContainer>
+                  </div>
+               </Card>
+               <Card className="bg-violet-950/5 border border-violet-500/10 p-10 rounded-[2.5rem] flex flex-col justify-center">
+                  <h3 className="text-violet-500 text-[10px] font-black uppercase mb-6 tracking-widest flex items-center gap-2"><Brain className="w-4 h-4"/> Neural Pattern Detected</h3>
+                  <p className="text-xl italic font-light leading-relaxed text-zinc-300">
+                    &quot;Attrition in the **Sales** department is trending 15% higher than the institutional baseline. Exit data indicates a direct correlation with **Manager ID 0x44**. Intervention suggested.&quot;
+                  </p>
+                  <Button className="mt-8 bg-violet-600 text-white text-[10px] font-black uppercase h-10 w-fit px-8 rounded-none">Generate Intervention Playbook</Button>
+               </Card>
+            </div>
           </div>
         )}
 
-        {/* MODULE: ENGAGEMENT */}
+        {/* MODULE: ENGAGEMENT PULSE */}
         {activeModule === 'engagement' && (
-          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-10 text-left">
-            <header className="flex justify-between items-end">
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-12 text-left">
+            <header className="flex justify-between items-end border-b border-zinc-900 pb-8">
               <div>
                 <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Engagement Pulse</h2>
-                <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-[0.3em] mt-2">Real-time Cultural Sentiment</p>
+                <p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.4em] mt-1">Real-time Cultural Sentiment</p>
               </div>
-              <Button className="bg-violet-600 text-white text-[10px] font-black uppercase h-10 px-6">Create New Pulse</Button>
+              <Button className="bg-violet-600 text-white text-[10px] font-black uppercase h-10 px-8 rounded-none shadow-lg">New Pulse Survey</Button>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              <Card className="bg-zinc-950 border-zinc-900 p-8 rounded-[2rem]">
-                <h3 className="text-[10px] font-black uppercase text-zinc-500 mb-6 tracking-widest">Psychological Climate Profile</h3>
-                <div className="space-y-6">
+              <Card className="bg-zinc-950 border-zinc-900 p-10 rounded-[2.5rem] shadow-2xl">
+                <h3 className="text-[10px] font-black uppercase text-zinc-500 mb-8 tracking-[0.2em]">Psychological Climate Profile</h3>
+                <div className="space-y-8">
                    <PulseBar label="Workload Balance" value={42} color="bg-rose-500" />
                    <PulseBar label="Autonomy Level" value={78} color="bg-emerald-500" />
                    <PulseBar label="Team Support" value={55} color="bg-violet-500" />
@@ -355,20 +401,29 @@ export default function NeuralPlatform() {
 
               <div className="space-y-6">
                 <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest flex items-center gap-2">
-                  <Zap className="w-3 h-3 text-amber-400" /> Strategic Manager Nudges
+                  <Zap className="w-3 h-3 text-amber-500" /> Strategic Manager Nudges
                 </h3>
-                <Card className="bg-zinc-900/50 border-l-4 border-amber-500 p-6 rounded-r-xl">
-                   <p className="text-xs text-zinc-300 italic leading-relaxed">
-                     "Workload balance in **Operations** has dropped by 15% this week. Nudge: Ask team members to identify one non-critical task to postpone during Monday's standup."
+                <Card className="bg-zinc-900/40 border-l-4 border-amber-500 p-8 rounded-r-2xl">
+                   <p className="text-sm text-zinc-300 italic leading-loose font-light">
+                     &quot;Workload balance has dropped significantly. **Nudge:** Instruct Managers to remove one non-essential task from the team sprint by 12:00 SAST Monday.&quot;
                    </p>
                 </Card>
-                <Card className="bg-zinc-900/50 border-l-4 border-emerald-500 p-6 rounded-r-xl">
-                   <p className="text-xs text-zinc-300 italic leading-relaxed">
-                     "Autonomy is high. Nudge: Use this week's 1-on-1s to discuss long-term 'Dream Projects' to maintain momentum."
+                <Card className="bg-zinc-900/40 border-l-4 border-emerald-500 p-8 rounded-r-2xl opacity-60">
+                   <p className="text-sm text-zinc-300 italic leading-loose font-light">
+                     &quot;Autonomy is at an all-time high. **Nudge:** Highlight team creative wins in the company newsletter to cement engagement.&quot;
                    </p>
                 </Card>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* MODULE: MANAGER RISK */}
+        {activeModule === 'risk' && (
+          <div className="animate-in slide-in-from-bottom-4 duration-500 text-center py-40">
+             <ShieldAlert className="w-16 h-16 text-zinc-800 mx-auto mb-6" />
+             <h2 className="text-zinc-600 font-bold uppercase tracking-[0.5em] text-xs">Risk Module Locked // Day 7 Deployment</h2>
+             <p className="text-zinc-800 text-[10px] uppercase mt-4 tracking-widest italic">Industrial Relations Analytics Coming Soon</p>
           </div>
         )}
 
