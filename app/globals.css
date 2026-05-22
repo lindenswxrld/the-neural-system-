@@ -1,43 +1,44 @@
 @tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @layer base {
   :root {
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
   }
+  body {
+    @apply bg-black text-white antialiased;
+  }
 }
-@tailwind components;
-@tailwind utilities;
 
-/* NEURAL PULSE ANIMATION */
+/* THE NEURAL HEARTBEAT */
 @keyframes neural-pulse {
-  0% { 
-    transform: scale(1); 
-    opacity: 0.8; 
-    filter: drop-shadow(0 0 0px rgba(139, 92, 246, 0)); 
-  }
-  50% { 
-    transform: scale(1.1); 
-    opacity: 1; 
-    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5)); 
-  }
-  100% { 
-    transform: scale(1); 
-    opacity: 0.8; 
-    filter: drop-shadow(0 0 0px rgba(139, 92, 246, 0)); 
-  }
+  0% { transform: scale(1); opacity: 0.7; filter: drop-shadow(0 0 0px rgba(139, 92, 246, 0)); }
+  50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 12px rgba(139, 92, 246, 0.6)); }
+  100% { transform: scale(1); opacity: 0.7; filter: drop-shadow(0 0 0px rgba(139, 92, 246, 0)); }
 }
 
 .animate-neural {
   animation: neural-pulse 3s infinite ease-in-out;
 }
 
-/* PRINT OPTIMIZATION */
+/* DARK MODE SCROLLBAR */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #18181b;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #27272a;
+}
+
 @media print {
-  .print-break-inside-avoid {
-    page-break-inside: avoid;
-  }
-  body {
-    background-color: white !important;
-    color: black !important;
-  }
+  body { background: white !important; color: black !important; }
+  .print-hidden { display: none !important; }
 }
