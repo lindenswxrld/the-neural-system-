@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-// 1. SHADCN UI COMPONENTS
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-// 2. LUCIDE ICONS
 import { 
   Brain, History, Target, BarChart3, 
   Printer, ChevronRight, Zap, Shield, Globe, 
@@ -13,18 +10,16 @@ import {
   UserPlus, Lock, LayoutDashboard, TrendingDown, 
   UploadCloud, ShieldAlert, Loader2 
 } from "lucide-react";
-
-// 3. VISUALIZATION & LIBRARIES
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, 
   ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, Tooltip 
 } from 'recharts';
 import Papa from 'papaparse';
-
-// 4. SERVER ACTIONS
 import { analyzePerformance, compareCandidates } from "./actions";
+import { supabase } from './lib/supabase';
 
-// --- HELPER COMPONENT (Defined ONCE here) ---
+// --- HELPER COMPONENTS ---
+
 const StatsCard = ({ label, value, trend, color }: { label: string, value: string, trend: string, color: string }) => (
   <Card className="bg-zinc-950 border-zinc-900 p-6 rounded-2xl">
     <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-2">{label}</p>
@@ -33,6 +28,18 @@ const StatsCard = ({ label, value, trend, color }: { label: string, value: strin
       <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded">{trend}</span>
     </div>
   </Card>
+);
+
+const PulseBar = ({ label, value, color }: { label: string, value: number, color: string }) => (
+  <div className="space-y-2 text-left">
+    <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-500">
+      <span>{label}</span>
+      <span className="text-white font-mono">{value}%</span>
+    </div>
+    <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
+      <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${value}%` }} />
+    </div>
+  </div>
 );
 
 type Module = 'intelligence' | 'retention' | 'engagement' | 'risk';
@@ -54,9 +61,7 @@ export default function NeuralPlatform() {
     setMounted(true);
     const saved = localStorage.getItem('neural_history');
     if (saved) {
-      try {
-        setHistory(JSON.parse(saved));
-      } catch (e) { console.error("History parse error", e); }
+      try { setHistory(JSON.parse(saved)); } catch (e) { console.error(e); }
     }
   }, []);
 
@@ -67,6 +72,7 @@ export default function NeuralPlatform() {
     setIsAnalyzing(true);
     try {
       const result = await analyzePerformance(text);
+      
       const nScore = Math.floor(
         ((result.Conscientiousness * 0.4) + (result.Openness * 0.3) + (result.Agreeableness * 0.1) + (result.Extraversion * 0.2)) - 
         (((result.Narcissism || 0) + (result.Machiavellianism || 0) + (result.Psychopathy || 0)) / 3)
@@ -93,14 +99,27 @@ export default function NeuralPlatform() {
         riskWarning: result.risk_warning,
       };
 
+      // OPTIONAL: Try saving to Supabase if configured
+      if (supabase) {
+        await supabase.from('employees').insert([{
+          name: newAudit.name,
+          score: newAudit.score,
+          traits: result
+        }]);
+      }
+
       const updatedHistory = [newAudit, ...history].slice(0, 10);
       setHistory(updatedHistory);
       setCurrentAudit(newAudit);
       localStorage.setItem('neural_history', JSON.stringify(updatedHistory));
       setText("");
       setCandidateName("");
-    } catch (error) { alert("Engine Latency."); }
-    finally { setIsAnalyzing(false); }
+    } catch (error) { 
+      console.error(error);
+      alert("Engine Latency. Check Console."); 
+    } finally { 
+      setIsAnalyzing(false); 
+    }
   };
 
   const toggleCompare = async (audit: any) => {
@@ -150,44 +169,53 @@ export default function NeuralPlatform() {
   // --- VIEW 2: DASHBOARD ---
   return (
     <div className="min-h-screen bg-black text-white flex font-sans">
-      {/* SIDEBAR */}
+      {/* SIDEBAR NAVIGATION */}
       <div className="w-64 border-r border-zinc-900 flex flex-col p-6 space-y-8 print:hidden">
         <button onClick={() => setView('marketing')} className="flex items-center gap-3">
           <Brain className="w-6 h-6 text-violet-500 animate-neural" />
-          <span className="font-black italic text-sm uppercase tracking-tighter">Neural System</span>
+          <span className="font-black italic text-sm uppercase tracking-tighter text-left leading-none">Neural<br/>System</span>
         </button>
+        
         <nav className="flex-1 space-y-2">
           <NavItem icon={<LayoutDashboard />} label="Intelligence" id="intelligence" />
           <NavItem icon={<TrendingDown />} label="Retention" id="retention" />
           <NavItem icon={<Users />} label="Engagement" id="engagement" />
           <NavItem icon={<ShieldAlert />} label="Manager Risk" id="risk" />
         </nav>
+
+        <div className="pt-6 border-t border-zinc-900">
+          <div className="flex items-center gap-3 p-2 text-zinc-500">
+            <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-[10px] font-bold text-white">HR</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest">Admin Mode</div>
+          </div>
+        </div>
       </div>
 
-      {/* MAIN */}
       <main className="flex-1 p-12 overflow-y-auto">
+        
+        {/* MODULE: INTELLIGENCE */}
         {activeModule === 'intelligence' && (
-          <div className="space-y-12">
+          <div className="space-y-12 text-left">
             <header className="flex justify-between items-end border-b border-zinc-900 pb-8">
               <h2 className="text-3xl font-black italic uppercase tracking-tighter">Intelligence Terminal</h2>
               <div className="flex items-center gap-4">
                  <div className="text-[8px] font-black text-rose-500 uppercase border border-rose-500/20 px-3 py-1 rounded bg-rose-500/5">
                     <Lock className="inline w-2 h-2 mr-1" /> Classified: Tier 1
                  </div>
-                 <Button onClick={() => window.print()} variant="outline" className="border-zinc-800 text-zinc-500 text-[10px] uppercase h-8">Export Report</Button>
+                 <Button onClick={() => window.print()} variant="outline" className="border-zinc-800 text-zinc-500 text-[10px] uppercase h-8">Export PDF</Button>
               </div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 text-left">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
               <div className="lg:col-span-4 space-y-6">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2"><UserPlus className="w-3 h-3"/> Name</label>
-                    <input type="text" value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-3 text-xs text-white outline-none focus:border-violet-500" placeholder="Candidate Name..." />
+                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2"><UserPlus className="w-3 h-3"/> Candidate Name</label>
+                    <input type="text" value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-900 rounded-lg p-3 text-xs text-white outline-none focus:border-violet-500 transition-all" placeholder="Enter Name..." />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2"><Target className="w-3 h-3"/> Data</label>
-                    <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-40 bg-zinc-950 border border-zinc-900 rounded-xl p-4 text-xs text-zinc-400 outline-none focus:border-violet-500" placeholder="Paste behavioral data..." />
+                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2"><Target className="w-3 h-3"/> Behavioral Data</label>
+                    <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-40 bg-zinc-950 border border-zinc-900 rounded-xl p-4 text-xs text-zinc-400 outline-none focus:border-violet-500 transition-all" placeholder="Paste assessment data..." />
                   </div>
                   <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full bg-white text-black font-black text-xs uppercase h-12">
                     {isAnalyzing ? <Loader2 className="animate-spin w-4 h-4" /> : "Initiate Audit"}
@@ -198,10 +226,10 @@ export default function NeuralPlatform() {
                   <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                     {history?.map((item) => (
                       <div key={item.id} className="flex gap-2">
-                        <button onClick={() => {setCurrentAudit(item); setCompareList([]);}} className={`flex-1 text-left p-3 rounded-xl border text-[10px] font-bold uppercase ${currentAudit?.id === item.id ? 'border-violet-500 bg-violet-500/5 text-white' : 'border-zinc-900 text-zinc-600'}`}>
+                        <button onClick={() => {setCurrentAudit(item); setCompareList([]);}} className={`flex-1 text-left p-3 rounded-xl border text-[10px] font-bold uppercase transition-all ${currentAudit?.id === item.id ? 'border-violet-500 bg-violet-500/5 text-white' : 'border-zinc-900 text-zinc-600'}`}>
                           {item.name}
                         </button>
-                        <button onClick={() => toggleCompare(item)} className={`p-3 rounded-xl border ${compareList.find(a => a.id === item.id) ? 'bg-violet-600 text-white' : 'border-zinc-900 text-zinc-700'}`}><Users className="w-3 h-3" /></button>
+                        <button onClick={() => toggleCompare(item)} className={`p-3 rounded-xl border transition-all ${compareList.find(a => a.id === item.id) ? 'bg-violet-600 text-white' : 'border-zinc-900 text-zinc-700'}`}><Users className="w-3 h-3" /></button>
                       </div>
                     ))}
                   </div>
@@ -210,7 +238,7 @@ export default function NeuralPlatform() {
 
               <div className="lg:col-span-8">
                 {compareList.length === 2 ? (
-                  <div className="space-y-8">
+                  <div className="space-y-8 animate-in zoom-in duration-500">
                     <div className="bg-zinc-950/30 p-10 rounded-[2rem] border border-violet-900/20 h-[450px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <RadarChart cx="50%" cy="50%" outerRadius="80%" data={compareList[0]?.data?.map((d: any, i: number) => ({
@@ -226,7 +254,7 @@ export default function NeuralPlatform() {
                     </div>
                   </div>
                 ) : currentAudit ? (
-                  <div className="space-y-12">
+                  <div className="space-y-12 animate-in fade-in duration-700">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-zinc-950/20 p-10 rounded-[2rem] border border-zinc-900">
                       <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
@@ -239,7 +267,7 @@ export default function NeuralPlatform() {
                       </div>
                       <div className="space-y-4">
                          <h3 className="text-[11px] font-black uppercase text-violet-500 italic">{currentAudit.name} Signature</h3>
-                         <p className="text-sm text-zinc-400 italic">"{currentAudit.summary}"</p>
+                         <p className="text-sm text-zinc-400 italic leading-relaxed">"{currentAudit.summary}"</p>
                       </div>
                     </div>
                   </div>
@@ -254,6 +282,7 @@ export default function NeuralPlatform() {
           </div>
         )}
 
+        {/* MODULE: RETENTION */}
         {activeModule === 'retention' && (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-10 text-left">
             <header className="flex justify-between items-end">
@@ -301,6 +330,48 @@ export default function NeuralPlatform() {
             </Card>
           </div>
         )}
+
+        {/* MODULE: ENGAGEMENT */}
+        {activeModule === 'engagement' && (
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-10 text-left">
+            <header className="flex justify-between items-end">
+              <div>
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Engagement Pulse</h2>
+                <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-[0.3em] mt-2">Real-time Cultural Sentiment</p>
+              </div>
+              <Button className="bg-violet-600 text-white text-[10px] font-black uppercase h-10 px-6">Create New Pulse</Button>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <Card className="bg-zinc-950 border-zinc-900 p-8 rounded-[2rem]">
+                <h3 className="text-[10px] font-black uppercase text-zinc-500 mb-6 tracking-widest">Psychological Climate Profile</h3>
+                <div className="space-y-6">
+                   <PulseBar label="Workload Balance" value={42} color="bg-rose-500" />
+                   <PulseBar label="Autonomy Level" value={78} color="bg-emerald-500" />
+                   <PulseBar label="Team Support" value={55} color="bg-violet-500" />
+                   <PulseBar label="Role Meaning" value={91} color="bg-indigo-500" />
+                </div>
+              </Card>
+
+              <div className="space-y-6">
+                <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest flex items-center gap-2">
+                  <Zap className="w-3 h-3 text-amber-400" /> Strategic Manager Nudges
+                </h3>
+                <Card className="bg-zinc-900/50 border-l-4 border-amber-500 p-6 rounded-r-xl">
+                   <p className="text-xs text-zinc-300 italic leading-relaxed">
+                     "Workload balance in **Operations** has dropped by 15% this week. Nudge: Ask team members to identify one non-critical task to postpone during Monday's standup."
+                   </p>
+                </Card>
+                <Card className="bg-zinc-900/50 border-l-4 border-emerald-500 p-6 rounded-r-xl">
+                   <p className="text-xs text-zinc-300 italic leading-relaxed">
+                     "Autonomy is high. Nudge: Use this week's 1-on-1s to discuss long-term 'Dream Projects' to maintain momentum."
+                   </p>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );
