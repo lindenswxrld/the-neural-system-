@@ -1,39 +1,65 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #000000;
-  --color-foreground: #ffffff;
+  --color-ink: #0a0b0d;
+  --color-ink-2: #111318;
+  --color-ink-3: #181c24;
+  --color-signal: #00e5a0;
+  --color-signal-dim: rgba(0, 229, 160, 0.12);
+  --color-edge: rgba(255, 255, 255, 0.08);
+  --color-edge-2: rgba(255, 255, 255, 0.14);
 }
 
 @layer base {
+  :root {
+    --background: 220 10% 4%;
+    --foreground: 220 10% 97%;
+  }
+  
   body {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: system-ui, -apple-system, sans-serif;
+    background-color: var(--color-ink);
+    color: #eef1f7;
+    font-family: var(--font-mono);
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-syne);
+    text-transform: uppercase;
   }
 }
 
-/* THE NEURAL PULSE (INSTITUTIONAL) */
-@keyframes neural-pulse {
-  0% { transform: scale(1); opacity: 0.6; filter: drop-shadow(0 0 0px rgba(139, 92, 246, 0)); }
-  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 15px rgba(139, 92, 246, 0.5)); }
-  100% { transform: scale(1); opacity: 0.6; filter: drop-shadow(0 0 0px rgba(139, 92, 246, 0)); }
-}
-
-.animate-neural {
-  animation: neural-pulse 4s infinite ease-in-out;
-}
-
-/* CUSTOM SCROLLBAR FOR PITCH BLACK LOOK */
+/* CUSTOM SCROLLBAR */
 ::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #000000; }
-::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }
+::-webkit-scrollbar-track { background: var(--color-ink); }
+::-webkit-scrollbar-thumb { background: var(--color-edge-2); border-radius: 0; }
 
-@media print {
-  body { background: white !important; color: black !important; }
-  .print-hidden { display: none !important; }
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-signal {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-fadeUp { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-pulse-signal { animation: pulse-signal 3s infinite ease-in-out; }
+.animate-blink { animation: blink 2s infinite ease-in-out; }
+.animate-ticker { animation: ticker-scroll 28s linear infinite; }
+
+.outline-text {
+  -webkit-text-stroke: 1px rgba(0, 229, 160, 0.6);
+  color: transparent;
 }
