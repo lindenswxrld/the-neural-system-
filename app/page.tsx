@@ -1,32 +1,25 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-// 1. UI COMPONENTS
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-// 2. ICONS
 import { 
   Brain, History, Target, BarChart3, 
   Printer, ChevronRight, Zap, Shield, Globe, 
   AlertTriangle, Fingerprint, Users, TrendingUp, 
   UserPlus, Lock, LayoutDashboard, TrendingDown, 
-  UploadCloud, ShieldAlert, Loader2 
+  UploadCloud, ShieldAlert, Loader2, Scale
 } from "lucide-react";
-
-// 3. TOOLS & DATA
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, 
   ResponsiveContainer, Legend, BarChart, Bar, XAxis, YAxis, Tooltip 
 } from 'recharts';
 import * as Papa from 'papaparse';
 import { analyzePerformance, compareCandidates } from "./actions";
-import { supabase } from './lib/supabase';
 
-// --- SHARED HELPER COMPONENTS ---
-
-const StatsCard = ({ label, value, trend, color }: { label: string, value: string, trend: string, color: string }) => (
-  <Card className="bg-zinc-950 border-zinc-900 p-6 rounded-2xl shadow-inner">
+// --- HELPERS ---
+const StatsCard = ({ label, value, trend, color }: any) => (
+  <Card className="bg-zinc-950 border-zinc-900 p-6 rounded-2xl">
     <p className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-2">{label}</p>
     <div className="flex justify-between items-end">
       <h4 className={`text-3xl font-black italic ${color}`}>{value}</h4>
@@ -35,9 +28,9 @@ const StatsCard = ({ label, value, trend, color }: { label: string, value: strin
   </Card>
 );
 
-const PulseBar = ({ label, value, color }: { label: string, value: number, color: string }) => (
+const PulseBar = ({ label, value, color }: any) => (
   <div className="space-y-2 text-left">
-    <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-500 tracking-tighter">
+    <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-500">
       <span>{label}</span>
       <span className="text-white font-mono">{value}%</span>
     </div>
@@ -50,7 +43,6 @@ const PulseBar = ({ label, value, color }: { label: string, value: number, color
 type Module = 'intelligence' | 'retention' | 'engagement' | 'risk';
 
 export default function NeuralPlatform() {
-  // --- STATE MANAGEMENT ---
   const [view, setView] = useState<'marketing' | 'dashboard'>('marketing');
   const [activeModule, setActiveModule] = useState<Module>('intelligence');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -62,8 +54,6 @@ export default function NeuralPlatform() {
   const [currentAudit, setCurrentAudit] = useState<any>(null);
   const [compareList, setCompareList] = useState<any[]>([]);
   const [mounted, setMounted] = useState(false);
-
-  // Retention Live Stats
   const [retentionStats, setRetentionStats] = useState({ rate: "14.2%", loss: "08" });
 
   useEffect(() => {
@@ -76,18 +66,12 @@ export default function NeuralPlatform() {
 
   if (!mounted) return null;
 
-  // --- LOGIC FUNCTIONS ---
-
   const handleAnalyze = async () => {
-    if (!text || !candidateName) return alert("Incomplete identity data.");
+    if (!text || !candidateName) return alert("Incomplete Data.");
     setIsAnalyzing(true);
     try {
       const result = await analyzePerformance(text);
-      const nScore = Math.floor(
-        ((result.Conscientiousness * 0.4) + (result.Openness * 0.3) + (result.Agreeableness * 0.1) + (result.Extraversion * 0.2)) - 
-        (((result.Narcissism || 0) + (result.Machiavellianism || 0) + (result.Psychopathy || 0)) / 3)
-      );
-
+      const nScore = Math.floor(((result.Conscientiousness * 0.4) + (result.Openness * 0.3)) - (result.Narcissism / 3));
       const newAudit = {
         id: Date.now(),
         name: candidateName.trim().toUpperCase(),
@@ -108,14 +92,12 @@ export default function NeuralPlatform() {
         summary: result.summary,
         riskWarning: result.risk_warning,
       };
-
       const updatedHistory = [newAudit, ...history].slice(0, 10);
       setHistory(updatedHistory);
       setCurrentAudit(newAudit);
       localStorage.setItem('neural_history', JSON.stringify(updatedHistory));
-      setText("");
-      setCandidateName("");
-    } catch (error) { alert("Neural Engine Latency."); }
+      setText(""); setCandidateName("");
+    } catch (error) { alert("Engine Latency."); }
     finally { setIsAnalyzing(false); }
   };
 
@@ -138,259 +120,150 @@ export default function NeuralPlatform() {
   const NavItem = ({ icon, label, id }: { icon: any, label: string, id: Module }) => (
     <button 
       onClick={() => setActiveModule(id)}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all ${activeModule === id ? 'bg-violet-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900'}`}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeModule === id ? 'bg-violet-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.3)]' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900'}`}
     >
       {React.cloneElement(icon, { size: 14 })}
       {label}
     </button>
   );
 
-  // --- VIEW 1: MARKETING LANDING ---
   if (view === 'marketing') {
     return (
-      <div className="min-h-screen bg-black text-white font-sans flex flex-col items-center justify-center p-6 text-center space-y-12">
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center space-y-12">
         <div className="flex items-center gap-3 mb-4 animate-neural">
           <Brain className="w-10 h-10 text-violet-500" />
           <span className="font-black italic text-2xl uppercase tracking-tighter">The Neural System</span>
         </div>
-        <div className="max-w-5xl space-y-10">
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter italic leading-none uppercase">
-            Precision <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-indigo-400">Human Intelligence.</span>
-          </h1>
-          <p className="text-zinc-500 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
-            Eliminate the risk of high-cost bad hires. Quantify psychological certainty and detect workplace toxicity with 98% predictive accuracy.
-          </p>
-          <Button onClick={() => setView('dashboard')} className="h-16 px-12 bg-white text-black font-black uppercase text-xl rounded-none active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-            Access Terminal <ChevronRight className="ml-2 w-6 h-6" />
-          </Button>
-        </div>
-        <footer className="fixed bottom-10 text-zinc-800 text-[10px] font-bold uppercase tracking-[0.5em]">
-          Linden Performance Architectures &copy; 2026
-        </footer>
+        <h1 className="text-6xl md:text-8xl font-black tracking-tighter italic uppercase leading-tight">
+          Precision <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-500">Human Intelligence.</span>
+        </h1>
+        <Button onClick={() => setView('dashboard')} className="h-16 px-12 bg-white text-black font-black uppercase text-xl rounded-none active:scale-95 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+          Access Terminal
+        </Button>
       </div>
     );
   }
 
-  // --- VIEW 2: INSTITUTIONAL DASHBOARD ---
   return (
     <div className="min-h-screen bg-black text-white flex font-sans">
-      
-      {/* SIDEBAR NAVIGATION */}
       <div className="w-64 border-r border-zinc-900 flex flex-col p-6 space-y-8 print:hidden">
         <button onClick={() => setView('marketing')} className="flex items-center gap-3 group">
           <Brain className="w-6 h-6 text-violet-500 animate-neural" />
-          <span className="font-black italic text-sm uppercase tracking-tighter text-left leading-none group-hover:text-violet-400 transition-colors">Neural<br/>System</span>
+          <span className="font-black italic text-sm uppercase tracking-tighter text-left leading-none group-hover:text-violet-400">Neural<br/>System</span>
         </button>
-        
         <nav className="flex-1 space-y-2">
           <NavItem icon={<LayoutDashboard />} label="Intelligence" id="intelligence" />
           <NavItem icon={<TrendingDown />} label="Retention" id="retention" />
           <NavItem icon={<Users />} label="Engagement" id="engagement" />
           <NavItem icon={<ShieldAlert />} label="Manager Risk" id="risk" />
         </nav>
-
         <div className="pt-6 border-t border-zinc-900">
-          <div className="flex items-center gap-3 p-2 text-zinc-500">
-            <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg">HR</div>
-            <div className="text-[10px] font-bold uppercase tracking-widest">Admin Mode</div>
+          <div className="flex items-center gap-3 p-2 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+            <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-white">HR</div>
+            Admin Mode
           </div>
         </div>
       </div>
 
-      {/* MAIN CONTENT TERMINAL */}
-      <main className="flex-1 p-12 overflow-y-auto custom-scrollbar">
-        
-        {/* MODULE: INTELLIGENCE TERMINAL */}
+      <main className="flex-1 p-12 overflow-y-auto">
         {activeModule === 'intelligence' && (
-          <div className="animate-in fade-in duration-700 space-y-12 text-left">
-            <header className="flex justify-between items-end border-b border-zinc-900 pb-8 print:border-zinc-200">
+          <div className="space-y-12 text-left animate-in fade-in duration-700">
+            <header className="flex justify-between items-end border-b border-zinc-900 pb-8">
               <div>
                 <h2 className="text-3xl font-black italic uppercase tracking-tighter">Intelligence Terminal</h2>
-                <p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.4em] mt-1">v2.3 // Behavioral Signature Mapping</p>
+                <p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.4em] mt-1">v2.5 // Behavioral Audit</p>
               </div>
-              <div className="flex flex-col items-end gap-3">
-                 <div className="flex items-center gap-2 text-[8px] font-black text-rose-500 uppercase tracking-[0.2em] border border-rose-500/20 px-3 py-1 rounded bg-rose-500/5">
-                    <Lock className="w-3 h-3" /> Classified: Tier 1
-                 </div>
-                 <Button onClick={() => window.print()} variant="outline" className="border-zinc-800 text-zinc-500 text-[10px] font-bold h-8 hover:bg-zinc-900">Export Session</Button>
-              </div>
+              <Button onClick={() => window.print()} variant="outline" className="border-zinc-800 text-zinc-500 text-[10px] font-bold h-8">Export Report</Button>
             </header>
-
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
               <div className="lg:col-span-4 space-y-8">
                 <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><UserPlus className="w-3 h-3"/> Candidate Name</label>
-                    <input type="text" value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-xs text-white outline-none focus:border-violet-500" placeholder="E.g. MICHAEL JORDAN" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><Target className="w-3 h-3"/> Behavioral Data</label>
-                    <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-40 bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-xs text-zinc-400 outline-none focus:border-violet-500" placeholder="Paste assessment raw text..." />
-                  </div>
-                  <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full bg-white text-black font-black text-xs uppercase h-12 shadow-xl hover:bg-zinc-200">
-                    {isAnalyzing ? <Loader2 className="animate-spin w-4 h-4" /> : "Initiate Neural Audit"}
-                  </Button>
+                  <div className="space-y-2"><label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><UserPlus className="w-3 h-3"/> Candidate Name</label>
+                  <input type="text" value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-3 text-xs text-white outline-none focus:border-violet-500" placeholder="Enter Name..." /></div>
+                  <div className="space-y-2"><label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><Target className="w-3 h-3"/> Data</label>
+                  <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-40 bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-xs text-zinc-400 outline-none focus:border-violet-500" placeholder="Paste data..." /></div>
+                  <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full bg-white text-black font-black text-xs uppercase h-12">{isAnalyzing ? <Loader2 className="animate-spin w-4 h-4" /> : "Initiate Audit"}</Button>
                 </div>
                 <div className="pt-8 border-t border-zinc-900">
-                  <h3 className="text-[10px] font-black text-zinc-500 uppercase mb-4 flex items-center gap-2 tracking-widest"><History className="w-3 h-3"/> Registry</h3>
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  <h3 className="text-[10px] font-black text-zinc-500 uppercase mb-4">Registry</h3>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                     {history?.map((item) => (
                       <div key={item.id} className="flex gap-2">
-                        <button onClick={() => {setCurrentAudit(item); setCompareList([]);}} className={`flex-1 text-left p-3 rounded-xl border text-[10px] font-bold uppercase transition-all ${currentAudit?.id === item.id ? 'border-violet-500 bg-violet-500/5 text-white' : 'border-zinc-900 text-zinc-600 hover:border-zinc-700'}`}>
-                          {item.name}
-                        </button>
-                        <button onClick={() => toggleCompare(item)} className={`p-3 rounded-xl border transition-all ${compareList.find(a => a.id === item.id) ? 'bg-violet-600 text-white' : 'border-zinc-900 text-zinc-700'}`}><Users className="w-3 h-3" /></button>
+                        <button onClick={() => {setCurrentAudit(item); setCompareList([]);}} className={`flex-1 text-left p-3 rounded-xl border text-[10px] font-bold uppercase ${currentAudit?.id === item.id ? 'border-violet-500 bg-violet-500/5 text-white' : 'border-zinc-900 text-zinc-600'}`}>{item.name}</button>
+                        <button onClick={() => toggleCompare(item)} className={`p-3 rounded-xl border ${compareList.find(a => a.id === item.id) ? 'bg-violet-600 text-white' : 'border-zinc-900 text-zinc-700'}`}><Users className="w-3 h-3" /></button>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-
               <div className="lg:col-span-8">
                 {compareList.length === 2 ? (
                   <div className="space-y-8 animate-in zoom-in duration-500">
-                    <div className="bg-zinc-950/40 p-10 rounded-[2.5rem] border border-violet-900/20 h-[500px]">
-                      <h3 className="text-[10px] font-black uppercase text-violet-500 tracking-[0.5em] mb-12 text-center">Head-to-Head Differential</h3>
+                    <div className="bg-zinc-950/40 p-10 rounded-[2.5rem] border border-violet-900/20 h-[450px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={compareList[0]?.data?.map((d: any, i: number) => ({
-                          subject: d.subject, A: d.A, B: compareList[1]?.data[i]?.A || 0
-                        }))}>
+                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={compareList[0]?.data?.map((d: any, i: number) => ({ subject: d.subject, A: d.A, B: compareList[1]?.data[i]?.A || 0 }))}>
                           <PolarGrid stroke="#27272a" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} />
+                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} />
                           <Radar name={compareList[0].name} dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} />
                           <Radar name={compareList[1].name} dataKey="B" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.3} />
                           <Legend />
                         </RadarChart>
                       </ResponsiveContainer>
                     </div>
-                    <Card className="bg-violet-950/5 border-violet-500/10 p-8 rounded-2xl">
-                       <h3 className="text-violet-500 text-[10px] font-black uppercase mb-4 flex items-center gap-2 tracking-widest"><Brain className="w-4 h-4"/> Differential Analysis</h3>
-                       {isComparing ? <div className="flex items-center gap-3 text-zinc-600 text-xs italic"><Loader2 className="animate-spin w-4 h-4" /> Synthesizing data...</div> : <p className="text-sm text-zinc-300 italic leading-loose font-light">&quot;{compSummary}&quot;</p>}
-                    </Card>
+                    <Card className="bg-violet-950/5 border-violet-500/10 p-8 rounded-2xl"><h3 className="text-violet-500 text-[10px] font-black uppercase mb-4 flex items-center gap-2"><Brain className="w-4 h-4"/> Comparative Intelligence</h3>{isComparing ? <div className="flex items-center gap-3 text-zinc-600 text-xs italic"><Loader2 className="animate-spin w-4 h-4" /> Synthesizing...</div> : <p className="text-sm text-zinc-300 italic font-light">"{compSummary}"</p>}</Card>
                   </div>
                 ) : currentAudit ? (
-                  <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                  <div className="space-y-12 animate-in fade-in duration-700">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-zinc-950/20 p-10 rounded-[2rem] border border-zinc-900">
-                      <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentAudit.data}>
-                            <PolarGrid stroke="#27272a" />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10, fontWeight: 'bold' }} />
-                            <Radar name="Candidate" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} />
-                          </RadarChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div className="space-y-6">
-                         <h3 className="text-[11px] font-black uppercase text-violet-500 italic tracking-[0.3em]">{currentAudit.name} Signature</h3>
-                         <p className="text-sm text-zinc-300 italic leading-relaxed font-light">Inner cognitive profile generated based on Big Five framework.</p>
-                         <p className="text-base text-zinc-200 italic font-light">&quot;{currentAudit.summary}&quot;</p>
-                      </div>
+                      <div className="h-[350px] w-full"><ResponsiveContainer width="100%" height="100%"><RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentAudit.data}><PolarGrid stroke="#27272a" /><PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} /><Radar name="Candidate" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.4} /></RadarChart></ResponsiveContainer></div>
+                      <div className="space-y-6"><h3 className="text-[11px] font-black uppercase text-violet-500 italic">{currentAudit.name} Signature</h3><p className="text-sm text-zinc-400 italic">"{currentAudit.summary}"</p></div>
                     </div>
-
-                    <div className="bg-rose-950/5 p-10 rounded-[2.5rem] border border-rose-900/10 space-y-8">
-                      <h3 className="text-[10px] font-black uppercase text-rose-500 flex items-center gap-3 tracking-[0.4em]"><AlertTriangle className="w-4 h-4"/> Toxicity Diagnostic</h3>
-                      <div className="grid grid-cols-3 gap-8">
-                        {currentAudit.darkTriad?.map((trait: any) => (
-                          <div key={trait.name} className="space-y-3">
-                            <div className="flex justify-between text-[10px] uppercase font-black text-zinc-600 tracking-tighter"><span>{trait.name}</span><span className="text-white font-mono">{trait.score}%</span></div>
-                            <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden"><div className="h-full bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.4)]" style={{ width: `${trait.score}%` }} /></div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="p-4 border-l-2 border-rose-500 bg-rose-500/5">
-                        <p className="text-[11px] text-rose-300 italic font-light">Note: {currentAudit.riskWarning || "No critical derailers identified."}</p>
-                      </div>
-                    </div>
+                    <div className="bg-rose-950/5 p-10 rounded-[2.5rem] border border-rose-900/10 space-y-8"><h3 className="text-[10px] font-black uppercase text-rose-500 flex items-center gap-3 tracking-[0.4em]"><AlertTriangle className="w-4 h-4"/> Toxicity Audit</h3><div className="grid grid-cols-3 gap-8">{currentAudit.darkTriad?.map((t: any) => (<div key={t.name} className="space-y-3"><div className="flex justify-between text-[10px] uppercase font-black text-zinc-600"><span>{t.name}</span><span className="text-white font-mono">{t.score}%</span></div><div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden"><div className="h-full bg-rose-600" style={{ width: `${t.score}%` }} /></div></div>))}</div></div>
                   </div>
                 ) : (
-                  <div className="h-[600px] border-2 border-dashed border-zinc-900 rounded-[3rem] flex flex-col items-center justify-center text-center p-12">
-                    <Fingerprint className="w-16 h-16 text-zinc-800 mb-6" />
-                    <h3 className="text-zinc-600 font-bold uppercase text-[10px] tracking-[0.5em]">Institutional Standby // Terminal Active</h3>
-                  </div>
+                  <div className="h-[600px] border-2 border-dashed border-zinc-900 rounded-[3rem] flex flex-col items-center justify-center text-center p-12"><Fingerprint className="w-16 h-16 text-zinc-800 mb-6" /><h3 className="text-zinc-600 font-bold uppercase text-[10px] tracking-[0.5em]">Terminal Active // Standby</h3></div>
                 )}
               </div>
             </div>
           </div>
         )}
 
-        {/* MODULE: RETENTION SHIELD */}
+        {/* MODULE: RETENTION */}
         {activeModule === 'retention' && (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-12 text-left">
-            <header className="flex justify-between items-end border-b border-zinc-900 pb-8">
-              <div>
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter">Retention Shield</h2>
-                <p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.4em] mt-1 text-left">Critical Skill Loss Prevention</p>
-              </div>
+            <header className="flex justify-between items-end border-b border-zinc-900 pb-8 text-left">
+              <div><h2 className="text-3xl font-black italic uppercase tracking-tighter">Retention Shield</h2><p className="text-zinc-600 text-[10px] uppercase font-bold mt-1">Attrition Monitor</p></div>
               <div className="relative group">
-                <input 
-                  type="file" accept=".csv" 
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      Papa.parse(file, {
-                        header: true,
-                        complete: (res) => {
-                          const leavers = res.data.filter((row: any) => row.Exit_Date && row.Exit_Date.trim() !== "").length;
-                          const total = res.data.length;
-                          const rate = ((leavers / total) * 100).toFixed(1);
-                          setRetentionStats({ rate: `${rate}%`, loss: leavers.toString().padStart(2, '0') });
-                          alert(`Processed ${total} records. System calibrated.`);
-                        }
-                      });
-                    }
-                  }}
-                />
-                <Button className="bg-white text-black text-[10px] font-black uppercase h-12 px-8 shadow-xl hover:bg-violet-600 hover:text-white transition-all">
-                  <UploadCloud className="w-4 h-4 mr-2" /> Ingest CSV Data
-                </Button>
+                <input type="file" accept=".csv" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => {
+                  const file = e.target.files?.[0]; if (file) Papa.parse(file, { header: true, complete: (res) => {
+                    const leavers = res.data.filter((row: any) => row.Exit_Date).length;
+                    const total = res.data.length;
+                    const rate = ((leavers / total) * 100).toFixed(1);
+                    setRetentionStats({ rate: `${rate}%`, loss: leavers.toString().padStart(2, '0') });
+                    alert(`Ingested ${total} records.`);
+                  }});
+                }} />
+                <Button className="bg-white text-black text-[10px] font-black uppercase h-12 px-8"><UploadCloud className="w-4 h-4 mr-2" /> Ingest CSV</Button>
               </div>
             </header>
-
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatsCard label="Turnover Rate" value={retentionStats.rate} trend="Live" color="text-emerald-400" />
-              <StatsCard label="Critical Skill Loss" value={retentionStats.loss} trend="Live" color="text-rose-500" />
+              <StatsCard label="Critical Loss" value={retentionStats.loss} trend="Live" color="text-rose-500" />
               <StatsCard label="Retention ROI" value="R1.2M" trend="Est." color="text-violet-400" />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-               <Card className="bg-zinc-950 border-zinc-900 p-10 rounded-[2.5rem] shadow-2xl">
-                  <h3 className="text-[10px] font-black uppercase text-zinc-500 mb-8 tracking-[0.2em]">Institutional Attrition Heatmap</h3>
-                  <div className="h-[300px]">
-                     <ResponsiveContainer width="100%" height="100%">
-                       <BarChart data={[{ dept: 'Sales', val: 22 }, { dept: 'Eng', val: 12 }, { dept: 'Ops', val: 18 }, { dept: 'HR', val: 5 }]}>
-                         <XAxis dataKey="dept" stroke="#3f3f46" fontSize={10} fontStyle="italic" />
-                         <YAxis stroke="#3f3f46" fontSize={10} />
-                         <Bar dataKey="val" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                       </BarChart>
-                     </ResponsiveContainer>
-                  </div>
-               </Card>
-               <Card className="bg-violet-950/5 border border-violet-500/10 p-10 rounded-[2.5rem] flex flex-col justify-center">
-                  <h3 className="text-violet-500 text-[10px] font-black uppercase mb-6 tracking-widest flex items-center gap-2"><Brain className="w-4 h-4"/> Neural Pattern Detected</h3>
-                  <p className="text-xl italic font-light leading-relaxed text-zinc-300">
-                    &quot;Attrition in the **Sales** department is trending 15% higher than the institutional baseline. Exit data indicates a direct correlation with **Manager ID 0x44**. Intervention suggested.&quot;
-                  </p>
-                  <Button className="mt-8 bg-violet-600 text-white text-[10px] font-black uppercase h-10 w-fit px-8 rounded-none">Generate Intervention Playbook</Button>
-               </Card>
             </div>
           </div>
         )}
 
-        {/* MODULE: ENGAGEMENT PULSE */}
+        {/* MODULE: ENGAGEMENT */}
         {activeModule === 'engagement' && (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-12 text-left">
             <header className="flex justify-between items-end border-b border-zinc-900 pb-8">
-              <div>
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Engagement Pulse</h2>
-                <p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.4em] mt-1">Real-time Cultural Sentiment</p>
-              </div>
-              <Button className="bg-violet-600 text-white text-[10px] font-black uppercase h-10 px-8 rounded-none shadow-lg">New Pulse Survey</Button>
+              <div><h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Engagement Pulse</h2><p className="text-zinc-600 text-[10px] uppercase font-bold mt-1 tracking-widest">Real-time Sentiment</p></div>
+              <Button className="bg-violet-600 text-white text-[10px] font-black uppercase h-10 px-8">New Pulse</Button>
             </header>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <Card className="bg-zinc-950 border-zinc-900 p-10 rounded-[2.5rem] shadow-2xl">
-                <h3 className="text-[10px] font-black uppercase text-zinc-500 mb-8 tracking-[0.2em]">Psychological Climate Profile</h3>
+                <h3 className="text-[10px] font-black uppercase text-zinc-500 mb-8 tracking-widest">Climate Profile</h3>
                 <div className="space-y-8">
                    <PulseBar label="Workload Balance" value={42} color="bg-rose-500" />
                    <PulseBar label="Autonomy Level" value={78} color="bg-emerald-500" />
@@ -398,35 +271,92 @@ export default function NeuralPlatform() {
                    <PulseBar label="Role Meaning" value={91} color="bg-indigo-500" />
                 </div>
               </Card>
-
               <div className="space-y-6">
-                <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest flex items-center gap-2">
-                  <Zap className="w-3 h-3 text-amber-500" /> Strategic Manager Nudges
-                </h3>
-                <Card className="bg-zinc-900/40 border-l-4 border-amber-500 p-8 rounded-r-2xl">
-                   <p className="text-sm text-zinc-300 italic leading-loose font-light">
-                     &quot;Workload balance has dropped significantly. **Nudge:** Instruct Managers to remove one non-essential task from the team sprint by 12:00 SAST Monday.&quot;
-                   </p>
-                </Card>
-                <Card className="bg-zinc-900/40 border-l-4 border-emerald-500 p-8 rounded-r-2xl opacity-60">
-                   <p className="text-sm text-zinc-300 italic leading-loose font-light">
-                     &quot;Autonomy is at an all-time high. **Nudge:** Highlight team creative wins in the company newsletter to cement engagement.&quot;
-                   </p>
-                </Card>
+                <h3 className="text-[10px] font-black uppercase text-zinc-500 tracking-widest flex items-center gap-2"><Zap className="w-3 h-3 text-amber-500" /> Manager Nudges</h3>
+                <Card className="bg-zinc-900/40 border-l-4 border-amber-500 p-8 rounded-r-2xl"><p className="text-sm text-zinc-300 italic font-light">"Workload balance is critical. Nudge: Remove one non-essential task from the team sprint by Monday."</p></Card>
               </div>
             </div>
           </div>
         )}
 
-        {/* MODULE: MANAGER RISK */}
+        {/* MODULE: MANAGER RISK (DAY 7 REVEAL) */}
         {activeModule === 'risk' && (
-          <div className="animate-in slide-in-from-bottom-4 duration-500 text-center py-40">
-             <ShieldAlert className="w-16 h-16 text-zinc-800 mx-auto mb-6" />
-             <h2 className="text-zinc-600 font-bold uppercase tracking-[0.5em] text-xs">Risk Module Locked // Day 7 Deployment</h2>
-             <p className="text-zinc-800 text-[10px] uppercase mt-4 tracking-widest italic">Industrial Relations Analytics Coming Soon</p>
+          <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-12 text-left">
+            <header className="flex justify-between items-end border-b border-zinc-900 pb-8">
+              <div>
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-rose-500">IR Risk Shield</h2>
+                <p className="text-zinc-600 text-[10px] uppercase font-bold mt-1 tracking-[0.4em]">Industrial Relations & Grievance Analytics</p>
+              </div>
+              <div className="flex items-center gap-2 text-[8px] font-black text-rose-500 uppercase border border-rose-500/20 px-3 py-1 rounded bg-rose-500/5">
+                <Scale className="w-3 h-3" /> CCMA Risk Protection Active
+              </div>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <StatsCard label="Active Grievances" value="12" trend="+2" color="text-rose-500" />
+              <StatsCard label="Disciplinary Cases" value="04" trend="-1" color="text-amber-500" />
+              <StatsCard label="Avg. IR Risk Score" value="64/100" trend="High" color="text-rose-400" />
+              <StatsCard label="Settlement Risk" value="R450k" trend="Est." color="text-rose-600" />
+            </div>
+
+            <Card className="bg-zinc-950 border-zinc-900 rounded-[2rem] overflow-hidden">
+              <table className="w-full text-left text-[10px]">
+                <thead className="bg-zinc-900/50 text-zinc-500 uppercase font-black">
+                  <tr>
+                    <th className="p-6">Manager Identity</th>
+                    <th className="p-6">Department</th>
+                    <th className="p-6 text-center">IR Risk Score</th>
+                    <th className="p-6">Primary Indicator</th>
+                    <th className="p-6 text-right">Intervention</th>
+                  </tr>
+                </thead>
+                <tbody className="text-white">
+                  <tr className="border-b border-zinc-900/50 hover:bg-rose-500/[0.02]">
+                    <td className="p-6 font-black italic uppercase">Johan van der Merwe</td>
+                    <td className="p-6 text-zinc-400">Operations (Mining)</td>
+                    <td className="p-6 text-center">
+                       <span className="px-3 py-1 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-full font-mono font-bold">88/100</span>
+                    </td>
+                    <td className="p-6 text-zinc-500">High Grievance Frequency (4 cases)</td>
+                    <td className="p-6 text-right">
+                       <Button variant="outline" className="border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white h-8 text-[9px] uppercase font-bold">Deploy Coaching</Button>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-zinc-900/50 hover:bg-emerald-500/[0.02]">
+                    <td className="p-6 font-black italic uppercase">Sarah Mokoena</td>
+                    <td className="p-6 text-zinc-400">Strategic Engineering</td>
+                    <td className="p-6 text-center">
+                       <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full font-mono font-bold">12/100</span>
+                    </td>
+                    <td className="p-6 text-zinc-500">Optimal Stability</td>
+                    <td className="p-6 text-right">
+                       <Button variant="outline" className="border-zinc-800 text-zinc-500 h-8 text-[9px] uppercase font-bold">Review</Button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <Card className="bg-zinc-950 border-zinc-900 p-8 rounded-2xl border-l-4 border-rose-500">
+                  <h3 className="text-rose-500 text-[10px] font-black uppercase mb-4 tracking-widest flex items-center gap-2">
+                     <AlertTriangle className="w-4 h-4" /> Legal Vulnerability Report
+                  </h3>
+                  <p className="text-sm text-zinc-300 italic font-light leading-loose">
+                    "Pattern detected in **Operations**. 3 out of 4 grievances relate to 'Inconsistent Disciplinary Action'. High probability of losing CCMA cases if dismissals proceed under current supervisor logic."
+                  </p>
+               </Card>
+               <Card className="bg-zinc-950 border-zinc-900 p-8 rounded-2xl border-l-4 border-violet-500">
+                  <h3 className="text-violet-500 text-[10px] font-black uppercase mb-4 tracking-widest flex items-center gap-2">
+                     <Brain className="w-4 h-4" /> Neural Solution
+                  </h3>
+                  <p className="text-sm text-zinc-300 italic font-light leading-loose">
+                    "Schedule mandatory **Fair Disciplinary Procedure** workshop for Operations Leads. Neural Engine suggests shadowing Manager 0x88 during performance reviews for 14 days."
+                  </p>
+               </Card>
+            </div>
           </div>
         )}
-
       </main>
     </div>
   );
