@@ -12,21 +12,24 @@ export async function analyzePerformance(userInput: string) {
   try {
     const { text } = await generateText({
       model: groq('llama-3.3-70b-versatile'),
-      system: `You are an elite Industrial Psychologist. Analyze text for:
+      system: `You are a Senior Industrial Psychologist and Performance Architect. 
+      Analyze the text for:
       1. Big Five (OCEAN)
       2. Dark Triad (Narcissism, Machiavellianism, Psychopathy)
-      3. Advanced Metrics: 
-         - BurnoutRisk: (JD-R Model - Balance of Demands vs Resources)
-         - PsychSafety: (Edmondson's Model - Safety to speak/voice)
-         - Ownership: (Rotter's Locus of Control - Internal vs External)
+      3. JD-R Burnout, Psych Safety, and Locus of Control.
       
-      Return ONLY a raw JSON object. Format: 
-      {"Openness": 80, "Conscientiousness": 90, "Extraversion": 50, "Agreeableness": 60, "Neuroticism": 20, 
-       "Narcissism": 10, "Machiavellianism": 5, "Psychopathy": 0, 
-       "BurnoutRisk": 30, "PsychSafety": 85, "Ownership": 75,
-       "summary": "...", "risk_warning": "..."}`,
+      CRITICAL: You must also provide an 'in_depth_prognosis'. 
+      Write this as a formal psychological report for a CEO. 
+      Include 3 sections: 
+      - THE ETIOLOGY: Where these scores stem from (e.g., environmental stressors, internal personality stable traits).
+      - ORGANIZATIONAL IMPACT: How this behavior affects the team and ROI.
+      - CLINICAL PRESCRIPTION: 3 specific management measures to prevent or change the behavior.
+
+      Return ONLY a raw JSON object. 
+      Format: {"Openness": 80, ..., "BurnoutRisk": 30, ..., "summary": "...", "risk_warning": "...", "in_depth_prognosis": "The full report text here..."}`,
       prompt: userInput,
     });
+
     const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
     return JSON.parse(cleanJson);
   } catch (error) {
@@ -35,14 +38,14 @@ export async function analyzePerformance(userInput: string) {
   }
 }
 
+// ... compareCandidates stays the same ...
 export async function compareCandidates(candidateA: any, candidateB: any) {
   try {
     const { text } = await generateText({
       model: groq('llama-3.3-70b-versatile'),
-      system: `You are an elite Industrial Psychologist. Compare ${candidateA.name} and ${candidateB.name}. 
-      Use JD-R and Psych Safety frameworks to recommend the best institutional fit.`,
+      system: `You are a Lead Industrial Psychologist. Compare ${candidateA.name} and ${candidateB.name}. Use the JD-R and Psych Safety frameworks. Identify the better institutional fit.`,
       prompt: `Data A: ${JSON.stringify(candidateA.data)}. Data B: ${JSON.stringify(candidateB.data)}.`,
     });
     return text;
-  } catch (error) { return "Optimizing differential..."; }
+  } catch (error) { return "Optimizing..."; }
 }

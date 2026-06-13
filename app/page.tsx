@@ -7,7 +7,7 @@ import {
   Brain, History, Target, BarChart3, Printer, ChevronRight, Zap, Shield, 
   Globe, AlertTriangle, Fingerprint, Users, TrendingUp, UserPlus, Lock, 
   LayoutDashboard, TrendingDown, UploadCloud, ShieldAlert, Loader2, Scale,
-  Flame, HeartHandshake, ShieldCheck
+  Flame, HeartHandshake, ShieldCheck, FileText
 } from "lucide-react";
 import { 
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, 
@@ -97,6 +97,7 @@ export default function NeuralPlatform() {
           { name: 'Ownership Mindset', score: result.Ownership, icon: <HeartHandshake size={12}/>, color: '#8b5cf6' },
         ],
         summary: result.summary,
+        prognosis: result.in_depth_prognosis, // Capturing the new clinical text
         riskWarning: result.risk_warning,
       };
 
@@ -125,7 +126,7 @@ export default function NeuralPlatform() {
     }
   };
 
-  // MARKETING VIEW
+  // --- MARKETING VIEW ---
   if (view === 'marketing') {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center space-y-12 relative overflow-hidden font-sans">
@@ -149,9 +150,10 @@ export default function NeuralPlatform() {
     );
   }
 
+  // --- DASHBOARD VIEW ---
   return (
     <div className="min-h-screen bg-black text-white flex font-sans">
-      {/* SIDEBAR */}
+      {/* SIDEBAR NAVIGATION */}
       <div className="w-72 border-r border-zinc-900 flex flex-col p-8 space-y-10 print:hidden bg-zinc-950/50 backdrop-blur-xl">
         <button onClick={() => setView('marketing')} className="flex items-center gap-3 group">
           <div className="w-6 h-6 border border-[#00e5a0] flex items-center justify-center rotate-45"><div className="w-2 h-2 bg-[#00e5a0]" /></div>
@@ -173,7 +175,7 @@ export default function NeuralPlatform() {
         {activeModule === 'intelligence' && (
           <div className="space-y-16 text-left animate-in fade-in duration-700">
             <header className="flex justify-between items-end border-b border-zinc-900 pb-10">
-              <div><h2 className="text-4xl font-black italic uppercase tracking-tighter">Intelligence Terminal</h2><p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.5em] mt-2 italic">v3.0 // Multi-Model Scientific Audit</p></div>
+              <div><h2 className="text-4xl font-black italic uppercase tracking-tighter">Intelligence Terminal</h2><p className="text-zinc-600 text-[10px] uppercase font-bold tracking-[0.5em] mt-2 italic">v3.1 // Executive Prognosis Active</p></div>
               <div className="flex gap-4">
                  <div className="flex items-center gap-2 text-[9px] font-black text-rose-500 uppercase border border-rose-500/20 px-4 py-2 rounded-lg bg-rose-500/5"><Lock size={12}/> Classified: Tier 1</div>
                  <Button onClick={() => window.print()} variant="outline" className="border-zinc-800 text-zinc-500 text-[10px] font-bold h-10 px-6">System.Export</Button>
@@ -181,60 +183,129 @@ export default function NeuralPlatform() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+              {/* INPUT COLUMN */}
               <div className="lg:col-span-4 space-y-10">
                 <div className="space-y-6">
-                  <div className="space-y-2"><label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><UserPlus size={14}/> Identity</label>
-                  <input type="text" value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-900 rounded-xl p-4 text-sm text-white outline-none focus:border-[#00e5a0] transition-all font-mono" placeholder="SENDER_ID" /></div>
-                  <div className="space-y-2"><label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><Target size={14}/> Behavioral Data</label>
-                  <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-48 bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-sm text-zinc-400 outline-none focus:border-[#00e5a0] transition-all font-mono resize-none" placeholder="INSERT_DATA_RAW" /></div>
+                  <div className="space-y-2 text-left">
+                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><UserPlus size={14}/> Candidate Identity</label>
+                    <input type="text" value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-sm text-white outline-none focus:border-[#00e5a0] transition-all font-mono" placeholder="SENDER_ID" />
+                  </div>
+                  <div className="space-y-2 text-left">
+                    <label className="text-[10px] font-black text-zinc-600 uppercase flex items-center gap-2 tracking-widest"><Target size={14}/> Behavioral Data</label>
+                    <textarea value={text} onChange={(e) => setText(e.target.value)} className="w-full h-48 bg-zinc-950 border border-zinc-800 rounded-2xl p-5 text-sm text-zinc-400 outline-none focus:border-[#00e5a0] transition-all font-mono resize-none" placeholder="INSERT_DATA_RAW" />
+                  </div>
                   <Button onClick={handleAnalyze} disabled={isAnalyzing} className="w-full bg-white text-black font-black text-xs uppercase h-14 shadow-2xl hover:bg-[#00e5a0] transition-all">{isAnalyzing ? <Loader2 className="animate-spin w-5 h-5" /> : "Initiate Neural Audit"}</Button>
                 </div>
-                <div className="pt-8 border-t border-zinc-900"><h3 className="text-[10px] font-black text-zinc-500 uppercase mb-4 flex items-center gap-2 tracking-widest"><History size={14}/> Registry</h3><div className="space-y-3">{history?.map((item) => (<div key={item.id} className="flex gap-2"><button onClick={() => {setCurrentAudit(item); setCompareList([]);}} className={`flex-1 text-left p-4 rounded-2xl border text-[10px] font-bold uppercase transition-all ${currentAudit?.id === item.id ? 'border-[#00e5a0] bg-[#00e5a0]/5 text-white shadow-xl' : 'border-zinc-900 text-zinc-600'}`}>{item.name}</button><button onClick={() => toggleCompare(item)} className={`p-4 rounded-2xl border transition-all ${compareList.find(a => a.id === item.id) ? 'bg-[#00e5a0] text-black border-[#00e5a0]' : 'border-zinc-900 text-zinc-700'}`}><Users size={14} /></button></div>))}</div></div>
+                
+                {/* REGISTRY */}
+                <div className="pt-8 border-t border-zinc-900 text-left">
+                    <h3 className="text-[10px] font-black text-zinc-500 uppercase mb-4 flex items-center gap-2 tracking-widest"><History size={14}/> Registry</h3>
+                    <div className="space-y-3">
+                        {history?.map((item) => (
+                            <div key={item.id} className="flex gap-2">
+                                <button onClick={() => {setCurrentAudit(item); setCompareList([]);}} className={`flex-1 text-left p-4 rounded-2xl border text-[10px] font-bold uppercase transition-all ${currentAudit?.id === item.id ? 'border-[#00e5a0] bg-[#00e5a0]/5 text-white shadow-xl' : 'border-zinc-900 text-zinc-600'}`}>{item.name}</button>
+                                <button onClick={() => toggleCompare(item)} className={`p-4 rounded-2xl border transition-all ${compareList.find(a => a.id === item.id) ? 'bg-[#00e5a0] text-black border-[#00e5a0]' : 'border-zinc-900 text-zinc-700 hover:text-white'}`}><Users size={14} /></button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
               </div>
 
+              {/* DATA VISUALS COLUMN */}
               <div className="lg:col-span-8 space-y-12">
                 {compareList.length === 2 ? (
                   <div className="space-y-8 animate-in zoom-in duration-500">
-                    <div className="bg-zinc-950/40 p-10 rounded-[2rem] border border-zinc-900 h-[450px]"><ResponsiveContainer width="100%" height="100%"><RadarChart cx="50%" cy="50%" outerRadius="80%" data={compareList[0]?.data?.map((d: any, i: number) => ({ subject: d.subject, A: d.A, B: compareList[1]?.data[i]?.A || 0 }))}><PolarGrid stroke="rgba(255,255,255,0.05)" /><PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} /><Radar name={compareList[0].name} dataKey="A" stroke="#00e5a0" fill="#00e5a0" fillOpacity={0.3} /><Radar name={compareList[1].name} dataKey="B" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} /><Legend /></RadarChart></ResponsiveContainer></div>
-                    <Card className="bg-[#00e5a0]/5 border border-[#00e5a0]/10 p-8 rounded-2xl"><h3 className="text-[#00e5a0] text-[10px] font-black uppercase mb-4 flex items-center gap-2"><Brain size={14}/> Comparative Differential</h3>{isComparing ? <div className="flex items-center gap-3 text-zinc-600 text-xs italic"><Loader2 className="animate-spin w-4 h-4" /> Processing...</div> : <p className="text-sm text-zinc-300 italic leading-loose font-light">"{compSummary}"</p>}</Card>
+                    <div className="bg-zinc-950/40 p-10 rounded-[2rem] border border-zinc-900 h-[450px] shadow-2xl"><ResponsiveContainer width="100%" height="100%"><RadarChart cx="50%" cy="50%" outerRadius="80%" data={compareList[0]?.data?.map((d: any, i: number) => ({ subject: d.subject, A: d.A, B: compareList[1]?.data[i]?.A || 0 }))}><PolarGrid stroke="rgba(255,255,255,0.05)" /><PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} /><Radar name={compareList[0].name} dataKey="A" stroke="#00e5a0" fill="#00e5a0" fillOpacity={0.3} /><Radar name={compareList[1].name} dataKey="B" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.3} /><Legend /></RadarChart></ResponsiveContainer></div>
+                    <Card className="bg-[#00e5a0]/5 border border-[#00e5a0]/10 p-8 rounded-2xl text-left"><h3 className="text-[#00e5a0] text-[10px] font-black uppercase mb-4 flex items-center gap-2"><Brain size={14}/> Comparative Differential</h3>{isComparing ? <div className="flex items-center gap-3 text-zinc-600 text-xs italic"><Loader2 className="animate-spin w-4 h-4" /> Synthesizing data points...</div> : <p className="text-sm text-zinc-300 italic leading-loose font-light">"{compSummary}"</p>}</Card>
                   </div>
                 ) : currentAudit ? (
                   <div className="space-y-12 animate-in fade-in duration-700">
+                    {/* RADAR & SUMMARY */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-zinc-950/20 p-10 rounded-[2rem] border border-zinc-900 shadow-2xl">
-                      <div className="h-[350px] w-full"><ResponsiveContainer width="100%" height="100%"><RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentAudit.data}><PolarGrid stroke="#27272a" /><PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} /><Radar name="Signature" dataKey="A" stroke="#00e5a0" fill="#00e5a0" fillOpacity={0.4} /></RadarChart></ResponsiveContainer></div>
-                      <div className="space-y-6 text-left"><h3 className="text-[11px] font-black uppercase text-[#00e5a0] italic tracking-widest">{currentAudit.name} Signature</h3><p className="text-sm text-zinc-400 italic">"{currentAudit.summary}"</p></div>
+                      <div className="h-[350px] w-full"><ResponsiveContainer width="100%" height="100%"><RadarChart cx="50%" cy="50%" outerRadius="80%" data={currentAudit.data}><PolarGrid stroke="#27272a" /><PolarAngleAxis dataKey="subject" tick={{ fill: '#71717a', fontSize: 10 }} /><Radar name="Candidate" dataKey="A" stroke="#00e5a0" fill="#00e5a0" fillOpacity={0.4} /></RadarChart></ResponsiveContainer></div>
+                      <div className="space-y-6 text-left"><h3 className="text-[11px] font-black uppercase text-[#00e5a0] italic tracking-widest">{currentAudit.name} Signature</h3><p className="text-sm text-zinc-300 italic leading-relaxed font-light">"{currentAudit.summary}"</p></div>
                     </div>
-                    {/* SCIENTIFIC MODULES (JD-R & PSYCH SAFETY) */}
+
+                    {/* SCIENTIFIC METRICS */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {currentAudit.scientific?.map((s: any) => (
                         <ScientificBar key={s.name} label={s.name} value={s.score} icon={s.icon} color={s.color} />
                       ))}
                     </div>
-                    <div className="bg-rose-950/5 p-10 rounded-[2.5rem] border border-rose-900/10 space-y-8 text-left"><h3 className="text-[10px] font-black uppercase text-rose-500 flex items-center gap-3 tracking-[0.4em]"><AlertTriangle size={14}/> Risk Audit</h3><div className="grid grid-cols-3 gap-8">{currentAudit.darkTriad?.map((t: any) => (<div key={t.name} className="space-y-3"><div className="flex justify-between text-[10px] uppercase font-black text-zinc-600"><span>{t.name}</span><span className="text-white font-mono">{t.score}%</span></div><div className="h-0.5 w-full bg-zinc-900 rounded-full overflow-hidden"><div className="h-full bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.4)]" style={{ width: `${t.score}%` }} /></div></div>))}</div></div>
+
+                    {/* TOXICITY AUDIT */}
+                    <div className="bg-rose-950/5 p-10 rounded-[2.5rem] border border-rose-900/10 space-y-8 text-left">
+                        <h3 className="text-[10px] font-black uppercase text-rose-500 flex items-center gap-3 tracking-[0.4em]"><AlertTriangle size={14}/> Risk Diagnostic</h3>
+                        <div className="grid grid-cols-3 gap-8">
+                            {currentAudit.darkTriad?.map((t: any) => (
+                                <div key={t.name} className="space-y-3">
+                                    <div className="flex justify-between text-[10px] uppercase font-black text-zinc-600"><span>{t.name}</span><span className="text-white font-mono">{t.score}%</span></div>
+                                    <div className="h-0.5 w-full bg-zinc-900 rounded-full overflow-hidden"><div className="h-full bg-rose-600 shadow-[0_0_15px_rgba(225,29,72,0.4)]" style={{ width: `${t.score}%` }} /></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* --- NEW: CLINICAL PROGNOSIS SECTION --- */}
+                    <Card className="bg-violet-950/5 border border-violet-500/10 rounded-[3rem] overflow-hidden shadow-2xl">
+                        <div className="bg-violet-500/10 px-10 py-6 border-b border-violet-500/10 flex justify-between items-center">
+                            <h3 className="text-violet-400 text-[11px] font-black uppercase tracking-[0.4em] flex items-center gap-3">
+                            <Brain className="w-5 h-5" /> Executive Clinical Intelligence Brief
+                            </h3>
+                            <span className="text-[9px] font-mono text-violet-500/50 uppercase italic">Confidential Analysis // v3.1</span>
+                        </div>
+                        <CardContent className="p-12 space-y-10 text-left">
+                            <div className="space-y-8">
+                                <p className="text-lg text-zinc-300 leading-relaxed font-light italic opacity-90 first-letter:text-5xl first-letter:font-black first-letter:text-violet-500 first-letter:mr-3 first-letter:float-left">
+                                {currentAudit.prognosis || "Prognosis documentation unavailable for this session identity."}
+                                </p>
+                            </div>
+
+                            <div className="mt-12 pt-10 border-t border-zinc-900 grid grid-cols-1 md:grid-cols-2 gap-12">
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] font-black text-[#00e5a0] uppercase tracking-widest flex items-center gap-2">
+                                        <ShieldCheck className="w-4 h-4" /> Strategic Prescriptions
+                                    </h4>
+                                    <ul className="text-xs text-zinc-500 space-y-4 list-none">
+                                        <li className="flex gap-4"><span className="text-[#00e5a0] font-mono font-bold">01</span> CALIBRATE JD-R: Align workload demands with available autonomy resources.</li>
+                                        <li className="flex gap-4"><span className="text-[#00e5a0] font-mono font-bold">02</span> VOICE INITIATIVE: Increase Psych Safety to surface hidden operational friction.</li>
+                                        <li className="flex gap-4"><span className="text-[#00e5a0] font-mono font-bold">03</span> RISK MITIGATION: Monitor Dark Triad markers for signs of cultural derailment.</li>
+                                    </ul>
+                                </div>
+                                <div className="bg-zinc-900/40 p-8 rounded-3xl border border-zinc-800">
+                                    <p className="text-[9px] text-zinc-600 leading-relaxed uppercase font-black mb-3 tracking-tighter">Architect's Summary:</p>
+                                    <p className="text-[11px] text-zinc-400 italic font-light leading-relaxed">
+                                    "This signature indicates a high-performance profile with specific environmental dependencies. Failure to provide adequate psychological safety will likely result in critical skill loss within 12 months."
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                   </div>
                 ) : (
-                  <div className="h-[600px] border-2 border-dashed border-zinc-900 rounded-[3rem] flex flex-col items-center justify-center text-center p-12"><Fingerprint className="w-16 h-16 text-zinc-800 mb-6" /><h3 className="text-zinc-600 font-bold uppercase text-[10px] tracking-[0.5em]">Terminal Standby</h3></div>
+                  <div className="h-[600px] border-2 border-dashed border-zinc-900 rounded-[3rem] flex flex-col items-center justify-center text-center p-12 opacity-30"><Fingerprint className="w-16 h-16 text-zinc-800 mb-6" /><h3 className="text-zinc-600 font-bold uppercase text-[10px] tracking-[0.5em]">Terminal Active // Standby</h3></div>
                 )}
               </div>
             </div>
           </div>
         )}
 
+        {/* OTHER MODULES (Unchanged) */}
         {activeModule === 'retention' && (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-12 text-left">
             <header className="flex justify-between items-end border-b border-zinc-900 pb-8 text-left">
-              <div><h2 className="text-3xl font-black italic uppercase tracking-tighter text-[#00e5a0]">Retention Shield</h2><p className="text-zinc-600 text-[10px] uppercase font-bold mt-1 tracking-widest italic">Capital Loss Monitor // v3.0</p></div>
+              <div><h2 className="text-3xl font-black italic uppercase tracking-tighter text-[#00e5a0]">Retention Shield</h2><p className="text-zinc-600 text-[10px] uppercase font-bold mt-1 tracking-widest italic">Attrition Monitor</p></div>
               <Button className="bg-white text-black text-[10px] font-black uppercase h-12 px-8"><UploadCloud size={14} className="mr-2" /> Ingest CSV</Button>
             </header>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <StatsCard label="Turnover Rate" value="14.2%" trend="Live" color="#00e5a0" />
-              <StatsCard label="Critical Risk" value="08" trend="Alert" color="#f43f5e" />
-              <StatsCard label="Capital Loss" value="R1.4M" trend="Est." color="#8b5cf6" />
+              <StatsCard label="Critical Loss" value="08" trend="Alert" color="#f43f5e" />
+              <StatsCard label="Retention ROI" value="R1.2M" trend="Est." color="#8b5cf6" />
             </div>
           </div>
         )}
 
-        {/* MOCK ENGAGEMENT & RISK VIEWS */}
         {(activeModule === 'engagement' || activeModule === 'risk') && (
            <div className="h-[60vh] flex flex-col items-center justify-center opacity-30 text-center">
              <Scale size={48} className="mb-6" />
